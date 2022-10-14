@@ -1,5 +1,5 @@
-import { BasketModel } from '@/model/basket-model'
+import type {BasketModel} from '@/model/basket-model'
 
 export type CartState = {
-  lines: BasketModel[];
+    lines: BasketModel[];
 }

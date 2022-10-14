@@ -1,67 +1,28 @@
 <template>
-  <div>
-    <template>
-      <v-container fluid>
-        <v-row dense v-if="products.length > 0">
-          <v-col cols="2"/>
-          <v-col cols="8">
-            <v-btn v-if="products.length > 0"
-                   class="ma-2"
-                   outlined
-                   color="indigo"
-                   @click="clearFavorite"
-            >
-              {{ 'btn.clear_favorite' | transFilter }}
-            </v-btn>
-            <v-row>
-              <v-col
-                v-for="(product,index) in products"
-                :key="index"
-                cols="4"
-              >
-                <ProductCard :product="product"/>
-              </v-col>
-              <v-col cols="1"/>
-            </v-row>
-          </v-col>
-          <v-col cols="2"/>
-        </v-row>
-        <v-row v-else
-               class="mb-6"
-               justify="center"
-               no-gutters
-        >
-          <v-banner two-line>
-            <v-avatar
-              slot="icon"
-              color="deep-purple accent-4"
-              size="150"
-            >
-              <v-icon color="white">
-                mdi-delete-empty
-              </v-icon>
-            </v-avatar>
-            {{ 'text.empty' | transFilter }}
-          </v-banner>
-        </v-row>
-      </v-container>
-    </template>
-  </div>
+    <h3 class="text-center mb-4">
+        {{ $filters.transFilter('text.favorites') }}
+    </h3>
+
+    <div v-if="favoriteStore.getFavorites.length > 0">
+        <button class="btn btn-danger mb-4" @click="favoriteStore.clearFavoriteData()">
+            {{ $filters.transFilter('btn.clear_favorite') }}
+        </button>
+
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3 mb-3">
+            <div v-for="(product,index) in favoriteStore.getFavorites" :key="index">
+                <div class="col">
+                    <product-card :product="product"/>
+                </div>
+            </div>
+        </div>
+    </div>
+    <empty v-else/>
 </template>
 
-<script>
-import { mapGetters, mapActions } from 'vuex'
+<script setup lang="ts">
 import ProductCard from '@/components/ProductCard.vue'
+import Empty from '@/components/Empty.vue'
+import {useFavoriteStore} from '@/store/module/favorite'
 
-export default {
-  components: {
-    ProductCard
-  },
-  computed: {
-    ...mapGetters({ products: 'favorite/getFavorites' })
-  },
-  methods: {
-    ...mapActions({ clearFavorite: 'favorite/clearFavoriteData' })
-  }
-}
+const favoriteStore = useFavoriteStore()
 </script>

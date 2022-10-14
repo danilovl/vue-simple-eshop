@@ -1,86 +1,69 @@
 <template>
-  <v-card>
-    <v-img
-      :src="product.image"
-      class="white--text align-end"
-      gradient="to bottom, rgba(0,0,0,.1), rgba(0,0,0,.5)"
-      height="200px"
-    >
-      <v-card-title v-text="product.title"></v-card-title>
-    </v-img>
+    <div class="card shadow-sm">
+        <img
+            :src="product.image"
+            alt="product image"
+            class="bd-placeholder-img card-img-top"
+            height=200
+            width=200
+        />
+        <div class="card-body">
+            <p class="card-title">
+                {{ product.title }}
+            </p>
+            <p class="card-text">
+                {{ $filters.truncateFilter(product.description) }}
+            </p>
 
-    <v-card-text class="text--primary">
-      <v-card-title>
-        {{ product.title }}
-      </v-card-title>
-      <v-card-text>
-        <div class="product-text">
-          {{ product.description | truncateFilter }}
+            <div class="d-flex justify-content-between align-items-center">
+                <font-awesome-icon icon="fa-solid fa-dollar-sign"/>
+                {{ $filters.currencyFilter(product.price) }}
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center">
+                <font-awesome-icon icon="fa-solid fa-cart-shopping"/>
+                {{ $filters.currencyFilter(cartStore.totalPriceByProduct(product)) }}
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="btn-group">
+                    <div class="me-3">
+                        <heart-favorite :product="product"/>
+                    </div>
+                    <div class="me-3">
+                        <add-to-cart :product="product"/>
+                    </div>
+                    <div>
+                        <font-awesome-icon
+                            icon="fa-solid fa-angles-right"
+                            class="cursor-pointer"
+                            @click="toRoute({name: 'product_detail', params: { id: product.id }})"
+                        />
+                    </div>
+                </div>
+            </div>
         </div>
-      </v-card-text>
-    </v-card-text>
-
-    <v-card-actions>
-      <v-btn icon>
-        <v-badge
-          color="green"
-          :content="product.price | currencyFilter"
-        >
-          <v-icon>mdi-currency-usd</v-icon>
-        </v-badge>
-      </v-btn>
-
-      <v-btn icon class="ml-12">
-        <v-badge
-          color="green"
-          :content="totalPriceByProduct()(product) | currencyFilter"
-        >
-          <v-icon>  mdi-basket</v-icon>
-        </v-badge>
-      </v-btn>
-    </v-card-actions>
-    <v-card-actions>
-      <HeartFavorite :product="product"/>
-      <AddToCart :product="product"/>
-      <v-btn
-        color="orange"
-        icon
-        :to="{ name: 'product_detail', params: { id: product.id }}"
-      >
-        <v-icon>
-          mdi-page-next-outline
-        </v-icon>
-      </v-btn>
-    </v-card-actions>
-  </v-card>
+    </div>
 </template>
 
-<script>
-import { mapGetters, mapMutations } from 'vuex'
-import { ProductModel } from '@/model/product-model'
+<script setup lang="ts">
+import {useRouter} from 'vue-router'
+import {ProductModel} from '@/model/product-model'
 import HeartFavorite from '@/components/button/HeartFavorite.vue'
 import AddToCart from '@/components/button/AddToCart.vue'
+import {useCartStore} from '@/store/module/cart'
 
-export default {
-  props: {
+defineProps({
     product: {
-      type: [ProductModel, Object],
-      required: true
+        type: [ProductModel, Object],
+        required: true
     }
-  },
-  methods: {
-    ...mapGetters({
-      isProductIsFavorite: 'favorite/isProductIsFavorite',
-      totalItemByProduct: 'cart/totalItemByProduct',
-      totalPriceByProduct: 'cart/totalPriceByProduct'
-    }),
-    ...mapMutations({
-      addOrRemoveProduct: 'favorite/addOrRemoveProduct'
-    })
-  },
-  components: {
-    HeartFavorite,
-    AddToCart
-  }
+})
+
+const cartStore = useCartStore()
+const router = useRouter()
+
+const toRoute = (route: string): void => {
+    router.push(route)
 }
 </script>

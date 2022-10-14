@@ -1,5 +1,5 @@
 export type AuthState = {
-  verifyToken: boolean;
-  authenticated: boolean;
-  jwt: string | null;
+    verifyToken: boolean;
+    authenticated: boolean;
+    jwt: string | null;
 }

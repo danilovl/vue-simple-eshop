@@ -1,5 +1,5 @@
-import { OrderModel } from '@/model/order-model'
+import type {OrderModel} from '@/model/order-model'
 
 export type OrderState = {
-  orders: OrderModel[];
+    orders: OrderModel[];
 }

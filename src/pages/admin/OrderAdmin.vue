@@ -1,89 +1,71 @@
 <template>
-  <v-container fluid>
-    <v-btn class="ma-2"
-           outlined
-           :color="showProcessed ? 'indigo' : 'red'"
-           v-on:click="showProcessed = !showProcessed"
-    >
-      {{ (showProcessed ? 'btn.show_processed' : 'btn.show_not_processed') | transFilter }}
-    </v-btn>
-    <v-simple-table fluid la>
-      <template v-slot:default>
-        <thead>
-        <tr>
-          <th class="text-left">{{ 'text.id' | transFilter }}</th>
-          <th class="text-left">{{ 'text.name' | transFilter }}</th>
-          <th class="text-left">{{ 'text.city' | transFilter }}</th>
-          <th class="text-left">{{ 'text.address' | transFilter }}</th>
-          <th class="text-left">{{ 'text.total' | transFilter }}</th>
-          <th class="text-left">{{ 'text.action' | transFilter }}</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr v-for="o in displayOrders" v-bind:key="o.id">
-          <td>{{ o.id }}</td>
-          <td>{{ o.email }}</td>
-          <td>{{ o.city }}</td>
-          <td>{{ o.address }}</td>
-          <td>{{ getTotal(o) | currencyFilter }}</td>
-          <td>
-            <v-btn class="ma-2"
-                   outlined
-                   :color="o.processed ? 'indigo' : 'red'"
-                   v-on:click="processOrder(o)"
-            >
-              {{ (o.processed? 'btn.not_processed' : 'btn.processed') | transFilter }}
-            </v-btn>
-          </td>
-        </tr>
-        </tbody>
-      </template>
-    </v-simple-table>
-  </v-container>
+    <div>
+        <button
+            class="btn"
+            :class="showProcessed ? 'btn-warning' : 'btn-primary'"
+            v-on:click="showProcessed = !showProcessed"
+        >
+            {{ $filters.transFilter(showProcessed ? 'btn.show_processed' : 'btn.show_not_processed') }}
+        </button>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th class="text-left">{{ $filters.transFilter('text.id') }}</th>
+                <th class="text-left">{{ $filters.transFilter('text.name') }}</th>
+                <th class="text-left">{{ $filters.transFilter('text.city') }}</th>
+                <th class="text-left">{{ $filters.transFilter('text.address') }}</th>
+                <th class="text-left">{{ $filters.transFilter('text.total') }}</th>
+                <th class="text-left">{{ $filters.transFilter('text.action') }}</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="order in displayOrders" :key="order.id">
+                <td>{{ order.id }}</td>
+                <td>{{ order.email }}</td>
+                <td>{{ order.city }}</td>
+                <td>{{ order.address }}</td>
+                <td>{{ $filters.currencyFilter(getTotal(order)) }}</td>
+                <td>
+                    <button
+                        class="btn"
+                        :class="showProcessed ? 'btn-warning' : 'btn-primary'"
+                        v-on:click="processOrder(order)"
+                    >
+                        {{ $filters.transFilter(order.processed ? 'btn.not_processed' : 'btn.processed') }}
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </template>
 
-<script>
-import { mapState, mapActions, mapMutations } from 'vuex'
+<script setup lang="ts">
+import {computed, ref} from 'vue'
+import type {BasketModel} from '@/model/basket-model'
+import type {OrderModel} from '@/model/order-model'
+import {useOrderStore} from '@/store/module/order'
 
-export default {
-  data: () => ({
-    showProcessed: false
-  }),
-  computed: {
-    ...mapState({
-      orders: function (state) {
-        return state.order.orders
-      }
-    }),
-    displayOrders () {
-      const showProcessed = this.showProcessed
-      return this.orders.filter(function (order) {
-        return order.processed !== showProcessed
-      })
-    }
-  },
-  methods: {
-    ...mapMutations({
-      changeOrderProcessed: 'order/changeOrderProcessed'
-    }),
-    ...mapActions({
-      getOrders: 'order/getOrders',
-      updateOrder: 'order/updateOrder'
-    }),
-    getTotal (order) {
-      if (order.basket.length > 0) {
-        return order.basket.reduce((total, line) =>
-          total + (line.quantity * line.product.price), 0)
-      } else {
+const orderStore = useOrderStore()
+await orderStore.loadOrders()
+
+const showProcessed = ref<boolean>(false)
+
+const displayOrders = computed((): OrderModel[] => {
+    return orderStore.getOrders().filter((order: OrderModel): boolean => order.processed !== showProcessed.value)
+})
+
+const getTotal = (order: OrderModel): number => {
+    if (order.basket.length === 0) {
         return 0
-      }
-    },
-    processOrder (order) {
-      this.updateOrder(order)
     }
-  },
-  created () {
-    this.getOrders()
-  }
+
+    return order.basket.reduce((total: number, line: BasketModel): number => {
+        return total + (line.quantity * line.product.price)
+    }, 0)
+}
+const processOrder = (order: OrderModel): void => {
+    orderStore.updateOrder(order)
 }
 </script>

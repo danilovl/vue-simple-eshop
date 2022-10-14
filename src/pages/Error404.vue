@@ -1,9 +1,13 @@
 <template>
-  <v-container fluid>
-     <v-row >
-       <v-col class="text-center">
-         404
-       </v-col>
-     </v-row>
-  </v-container>
+  <div>
+    404
+  </div>
 </template>
+
+<script lang="ts">
+import {defineComponent} from 'vue'
+
+export default defineComponent({
+    name: 'Error404',
+})
+</script>

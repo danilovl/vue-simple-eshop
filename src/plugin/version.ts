@@ -1,8 +1,8 @@
-import _Vue from 'vue'
+import type {App} from '@vue/runtime-core'
 
 export default {
-  install: function (Vue: typeof _Vue, options?: any): void {
-    const { version } = options
-    Vue.prototype.$version = () => console.log(`Demo application version ${version}`)
-  }
+    install: (app: App, options?: any): void => {
+        const {version} = options
+        app.config.globalProperties.$version = (): void => console.log(`Demo application version ${version}`)
+    }
 }

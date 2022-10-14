@@ -1,70 +1,66 @@
-import { ProductModel } from '@/model/product-model'
-import Axios, { AxiosResponse } from 'axios'
-import { AlertModel } from '@/model/alert-model'
+import {reactive} from 'vue'
+import {defineStore} from 'pinia'
+import Axios from 'axios'
+import type {AxiosResponse} from 'axios'
+import type {ProductState} from '@/store/type/product'
+import {ProductModel} from '@/model/product-model'
+import {AlertModel} from '@/model/alert-model'
 import AlertConstant from '@/constant/alert-constant'
 import ApiConstant from '@/constant/api-constant'
-import { Module, RootState } from '@/store/type'
-import { ProductState } from '@/store/type/product'
-import { ActionTree, GetterTree, MutationTree } from 'vuex'
+import {useLoaderStore} from '@/store/module/loader'
+import {useAlertStore} from '@/store/module/alert'
 
-const state: ProductState = {
-  product: null
-}
+export const useProductStore = defineStore('product', () => {
+    const loaderStore = useLoaderStore()
+    const alertStore = useAlertStore()
 
-const getters: GetterTree<ProductState, RootState> = {
-  getProduct (state: any) {
-    return state.product
-  }
-}
+    const state = reactive<ProductState>({
+        product: null
+    }) as ProductState
 
-const mutations: MutationTree<ProductState> = {
-  setProduct (state: any, product: ProductModel) {
-    state.product = product
-  }
-}
-
-const actions: ActionTree<ProductState, RootState> = {
-  async initializeProduct (context: any, productId: number) {
-    try {
-      context.dispatch('loader/setLoading', true, { root: true })
-
-      const url = `${ApiConstant.PRODUCTS_URL}/${productId}`
-      const response = await Axios.get(url).then(function (response: AxiosResponse) {
-        setTimeout(function () {
-          context.dispatch('loader/setLoading', false, { root: true })
-        }, 500)
-
-        return response
-      })
-
-      const product = new ProductModel(
-        response.data.id,
-        response.data.title,
-        response.data.description,
-        response.data.price,
-        response.data.rating,
-        response.data.ratingCount,
-        response.data.image
-      )
-      context.commit('setProduct', product)
-    } catch (e) {
-      context.dispatch(
-        'alert/addAlert',
-        new AlertModel(AlertConstant.ERROR, e.message),
-        { root: true }
-      )
+    const getProduct = (): ProductModel | null => {
+        return state.product
     }
 
-    context.dispatch('loader/setLoading', true, { root: true })
-  }
-}
+    const setProduct = (product: ProductModel): void => {
+        state.product = product
+    }
 
-const Product: Module<ProductState, RootState> = {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations
-}
+    const initializeProduct = async (productId: number): Promise<any> => {
+        try {
+            loaderStore.setLoading(true)
 
-export default Product
+            const url = `${ApiConstant.PRODUCTS_URL}/${productId}`
+            const response = await Axios.get(url)
+                .then((response: AxiosResponse): AxiosResponse => {
+                    loaderStore.setLoading(false)
+
+                    return response
+                })
+
+            const product = new ProductModel(
+                response.data.id,
+                response.data.title,
+                response.data.description,
+                response.data.price,
+                response.data.rating,
+                response.data.ratingCount,
+                response.data.image
+            )
+
+            setProduct(product)
+        } catch (error: any) {
+            const alert: AlertModel = new AlertModel(AlertConstant.ERROR, error.message)
+
+            alertStore.addAlert(alert)
+        }
+
+        loaderStore.setLoading(false)
+    }
+
+    return {
+        getProduct,
+        setProduct,
+        initializeProduct
+    }
+})

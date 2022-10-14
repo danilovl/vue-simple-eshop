@@ -1,7 +1,21 @@
+@import '~bootstrap/scss/bootstrap';
+
 .product-text {
   min-height: 120px
 }
 
 .product-admin-action {
   display: inline-flex;
+}
+
+.cursor-pointer {
+  cursor: pointer !important;
+}
+
+.spinner-loading {
+  position: fixed;
+  z-index: 999;
+  margin: auto;
+  left: 0;
+  right: 0;
 }

@@ -1,6 +1,6 @@
 export default {
-  SUCCESS: 'success',
-  INFO: 'info',
-  WARNING: 'warning',
-  ERROR: 'error'
+    SUCCESS: 'alert-success',
+    INFO: 'alert-info',
+    WARNING: 'alert-warning',
+    ERROR: 'alert-danger'
 }

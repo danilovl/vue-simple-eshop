@@ -1,5 +1,5 @@
-import { ProductModel } from '@/model/product-model'
+import type {ProductModel} from '@/model/product-model'
 
 export type ProductState = {
-  product: ProductModel | null;
+    product: ProductModel | null;
 }

@@ -1,89 +1,85 @@
+import {computed, reactive} from 'vue'
+import {defineStore} from 'pinia'
 import Axios from 'axios'
-import { AuthModel } from '@/model/auth-model'
+import type {AxiosInstance} from 'axios'
+import type {AuthState} from '@/store/type/auth'
+import type {AuthModel} from '@/model/auth-model'
 import ApiConstant from '@/constant/api-constant'
-import { AuthState } from '@/store/type/auth'
-import { Module, RootState } from '@/store/type'
-import { ActionTree, GetterTree, MutationTree } from 'vuex'
 
-const state: AuthState = {
-  verifyToken: false,
-  authenticated: false,
-  jwt: null
-}
+export const useAuthStore = defineStore('auth', ()  => {
+    const state = reactive<AuthState>({
+        verifyToken: false,
+        authenticated: false,
+        jwt: null
+    }) as AuthState
 
-const getters: GetterTree<AuthState, RootState> = {
-  authenticatedAxios (state: AuthState) {
-    return Axios.create({
-      headers: {
-        Authorization: `Authentication<${state.jwt}>`
-      }
-    })
-  },
-  isAuthenticated (state: AuthState): boolean {
-    return state.authenticated
-  }
-}
+    const isAuthenticated = computed((): boolean => state.authenticated)
 
-const mutations: MutationTree<AuthState> = {
-  setAuthenticated (state: AuthState, header: string): void {
-    state.jwt = header
-    state.authenticated = true
+    const authenticatedAxios = (): AxiosInstance => {
+        return Axios.create({
+            headers: {
+                Authorization: `Authentication<${state.jwt}>`
+            }
+        })
+    }
 
-    localStorage.setItem('user-token', state.jwt)
-  },
-  setVerifyToken (state: AuthState, isVerify: boolean): void {
-    state.verifyToken = isVerify
-  },
-  clearAuthentication (state: AuthState): void {
-    state.authenticated = false
-    state.jwt = null
+    const setAuthenticated = (header: string): void => {
+        state.jwt = header
+        state.authenticated = true
 
-    localStorage.removeItem('user-token')
-  }
-}
+        localStorage.setItem('user-token', state.jwt)
+    }
 
-const actions: ActionTree<AuthState, RootState> = {
-  async initializeAuthenticate (context: any) {
-    const token = localStorage.getItem('user-token')
+    const setVerifyToken = (isVerify: boolean): void => {
+        state.verifyToken = isVerify
+    }
 
-    if (token !== null) {
-      await context.dispatch('verifyToken', token).then(function () {
-        if (state.verifyToken) {
-          context.commit('setAuthenticated', token)
-        } else {
-          context.commit('clearAuthentication')
+    const logout = (): void => {
+        state.authenticated = false
+        state.jwt = null
+
+        localStorage.removeItem('user-token')
+    }
+
+    const verifyToken = async (token: string): Promise<any> => {
+        const response = await Axios.create({
+            headers: {
+                Authorization: `Authentication<${token}>`
+            }
+        }).post(ApiConstant.VERIFY_TOKEN_URL)
+
+        setVerifyToken(response.data.success === true)
+    }
+
+    const initializeAuthenticate = async (): Promise<any> => {
+        const token = localStorage.getItem('user-token')
+        if (token === null) {
+            logout()
+
+            return
         }
-      })
-    } else {
-      context.commit('clearAuthentication')
+
+        await verifyToken(token).then((): void => {
+            if (state.verifyToken) {
+                setAuthenticated(token)
+            } else {
+                logout()
+            }
+        })
     }
-  },
-  logout (context: any): void {
-    context.commit('clearAuthentication')
-  },
-  async authenticate (context: any, credentials: AuthModel) {
-    const response = await Axios.post(ApiConstant.LOGIN_URL, credentials)
-    if (response.data.success === true) {
-      context.commit('setAuthenticated', response.data.token)
+
+    const authenticate = async (credentials: AuthModel): Promise<any> => {
+        const response = await Axios.post(ApiConstant.LOGIN_URL, credentials)
+        if (response.data.success === true) {
+            setAuthenticated(response.data.token)
+        }
     }
-  },
-  async verifyToken (context: any, token: string) {
-    const response = await Axios.create({
-      headers: {
-        Authorization: `Authentication<${token}>`
-      }
-    }).post(ApiConstant.VERIFY_TOKEN_URL)
 
-    context.commit('setVerifyToken', response.data.success === true)
-  }
-}
-
-const Auth: Module<AuthState, RootState> = {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations
-}
-
-export default Auth
+    return {
+        isAuthenticated,
+        authenticate,
+        authenticatedAxios,
+        logout,
+        initializeAuthenticate
+    }
+})

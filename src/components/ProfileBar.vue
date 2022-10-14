@@ -1,57 +1,37 @@
 <template>
-  <v-chip
-    v-if="!isAuthenticated"
-    class="ma-2"
-    color="white"
-    outlined
-    pill
-    to="/login"
-  >
-    {{ 'btn.login' | transFilter }}
-    <v-icon right>mdi-login</v-icon>
-  </v-chip>
+    <router-link
+        v-if="!authStore.isAuthenticated"
+        class="btn btn-outline-primary"
+        :to="{name: 'login'}"
+    >
+        {{ $filters.transFilter('btn.login') }}
+    </router-link>
 
-  <v-chip
-    v-else
-    class="ma-2"
-    color="white"
-    outlined
-    pill
-  >
-    {{ 'text.user_account' | transFilter }}
-    <v-btn
-      icon
-      :to="{ name: 'admin'}"
-    >
-      <v-icon>
-        mdi-account-outline
-      </v-icon>
-    </v-btn>
-    <v-icon right
+    <template v-else>
+        <router-link
+            class="btn btn-outline-primary me-3"
+            :to="{name: 'admin_product_list'}"
+        >
+            {{ $filters.transFilter('text.user_account') }}
+        </router-link>
+
+        <font-awesome-icon
+            icon="fa-solid fa-right-from-bracket"
+            class="cursor-pointer bg-dark text-white"
             @click="logoutUser"
-    >
-      mdi-logout
-    </v-icon>
-  </v-chip>
+        />
+    </template>
 </template>
 
-<script>
-import { mapGetters, mapActions } from 'vuex'
+<script setup lang="ts">
+import {useRouter} from 'vue-router'
+import {useAuthStore} from '@/store/module/auth'
 
-export default {
-  computed: {
-    ...mapGetters({
-      isAuthenticated: 'auth/isAuthenticated'
-    })
-  },
-  methods: {
-    ...mapActions({
-      logout: 'auth/logout'
-    }),
-    async logoutUser () {
-      this.logout()
-      await this.$router.push('/')
-    }
-  }
+const authStore = useAuthStore()
+const router = useRouter()
+
+const logoutUser = async (): Promise<void> => {
+    authStore.logout()
+    await router.push({name: 'home'})
 }
 </script>

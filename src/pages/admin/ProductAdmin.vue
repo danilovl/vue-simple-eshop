@@ -1,101 +1,76 @@
 <template>
-  <v-container fluid>
-    <v-btn class="ma-2"
-           outlined
-           color="indigo"
-           to="/admin/products/create"
-    >
-      {{ 'btn.create_product' | transFilter }}
-    </v-btn>
-    <v-simple-table fluid la>
-      <template v-slot:default>
-        <thead>
-        <tr>
-          <th class="text-left">{{ 'text.id' | transFilter }}</th>
-          <th class="text-left">{{ 'text.title' | transFilter }}</th>
-          <th class="text-left">{{ 'text.description' | transFilter }}</th>
-          <th class="text-left">{{ 'text.price' | transFilter }}</th>
-          <th class="text-left">{{ 'text.rating' | transFilter }}</th>
-          <th class="text-left">{{ 'text.rating_count' | transFilter }}</th>
-          <th class="text-left"> {{ 'text.image' | transFilter }}</th>
-          <th class="text-left"> {{ 'text.action' | transFilter }}</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr v-for="product in products" v-bind:key="product.id">
-          <td>{{ product.id }}</td>
-          <td>{{ product.title }}</td>
-          <td>{{ product.description | truncateFilter(300) }}</td>
-          <td>{{ product.price | currencyFilter }}</td>
-          <td>{{ product.rating }}</td>
-          <td>{{ product.ratingCount }}</td>
-          <td>
-            <v-img
-              :src="product.image"
-              class="white--text align-end"
-              gradient="to bottom, rgba(0,0,0,.1), rgba(0,0,0,.5)"
-              height="50px"
-              width="50px"
-            />
-          </td>
-          <td class="text-center product-admin-action">
-            <v-btn class="ma-2"
-                   outlined
-                   color="yellow"
-                   v-on:click="handleEdit(product)"
-            >
-              {{ 'btn.edit' | transFilter }}
-            </v-btn>
+    <div>
+        <router-link
+            class="btn btn-success"
+            :to="{ name: 'admin_product', params: { op: 'create'}}"
+        >
+            {{ $filters.transFilter('btn.create_product') }}
+        </router-link>
 
-            <v-btn
-              class="ma-2"
-              outlined
-              color="green"
-              :to="{ name: 'product_detail', params: { id: product.id }}"
-            >
-              {{ 'btn.detail' | transFilter }}
-            </v-btn>
+        <table class="table">
+            <thead>
+            <tr>
+                <th class="text-left">{{ $filters.transFilter('text.id') }}</th>
+                <th class="text-left">{{ $filters.transFilter('text.title') }}</th>
+                <th class="text-left">{{ $filters.transFilter('text.description') }}</th>
+                <th class="text-left">{{ $filters.transFilter('text.price') }}</th>
+                <th class="text-left">{{ $filters.transFilter('text.rating') }}</th>
+                <th class="text-left">{{ $filters.transFilter('text.rating_count') }}</th>
+                <th class="text-left">{{ $filters.transFilter('text.image') }}</th>
+                <th class="text-left">{{ $filters.transFilter('text.action') }}</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="product in productsStore.processedCurrentPageProducts()" :key="product.id">
+                <td>{{ product.id }}</td>
+                <td>{{ product.title }}</td>
+                <td>{{ $filters.truncateFilter(product.description, 300) }}</td>
+                <td>{{ $filters.currencyFilter(product.price) }}</td>
+                <td>{{ product.rating }}</td>
+                <td>{{ product.ratingCount }}</td>
+                <td>
+                    <img
+                        :src="product.image"
+                        alt="product image"
+                        height="50"
+                        width="50"
+                    />
+                </td>
+                <td class="text-center product-admin-action">
+                    <button class="btn btn-warning me-3" v-on:click="handleEdit(product)">
+                        {{ $filters.transFilter('btn.edit') }}
+                    </button>
 
-            <v-btn class="ma-2"
-                   outlined
-                   color="red"
-                   v-on:click="removeProduct(product)"
-            >
-              {{ 'btn.delete' | transFilter }}
-            </v-btn>
-          </td>
-        </tr>
-        </tbody>
-      </template>
-    </v-simple-table>
-    <PageControl/>
-  </v-container>
+                    <router-link
+                        class="btn btn-success me-3"
+                        :to="{ name: 'product_detail', params: { id: product.id }}"
+                    >
+                        {{ $filters.transFilter('btn.detail') }}
+                    </router-link>
+
+                    <button class="btn btn-danger" v-on:click="productsStore.removeProduct(product)">
+                        {{ $filters.transFilter('btn.delete') }}
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <page-control/>
+    </div>
 </template>
 
-<script>
-import { mapGetters, mapActions } from 'vuex'
-import PageControl from '../../components/PageControls.vue'
+<script setup lang="ts">
+import {useRouter} from 'vue-router'
+import type {ProductModel} from '@/model/product-model'
+import PageControl from '@/components/PageControls.vue'
+import {useProductsStore} from '@/store/module/products'
 
-export default {
-  components: {
-    PageControl
-  },
-  computed: {
-    ...mapGetters({
-      products: 'products/processedCurrentPageProducts'
-    })
-  },
-  methods: {
-    ...mapActions({
-      getData: 'products/getData',
-      removeProduct: 'products/removeProduct'
-    }),
-    handleEdit (product) {
-      this.$router.push(`/admin/products/edit/${product.id}`)
-    }
-  },
-  async created () {
-    await this.getData()
-  }
+const router = useRouter()
+const productsStore = useProductsStore()
+
+await productsStore.getData()
+
+const handleEdit = (product: ProductModel): void => {
+    router.push({name: 'admin_product', params: {op: 'edit', id: product.id}})
 }
 </script>

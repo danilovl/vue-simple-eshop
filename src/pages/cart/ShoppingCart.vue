@@ -1,87 +1,56 @@
 <template>
-  <v-container fluid>
-    <Empty v-if="lines.length === 0"/>
-    <v-container v-else fluid>
-      <v-simple-table fluid>
-        <template v-slot:default>
-          <thead>
-          <tr>
-            <th class="text-left">{{ 'text.quantity' | transFilter }}</th>
-            <th class="text-left">{{ 'text.product' | transFilter }}</th>
-            <th class="text-right">{{ 'text.price' | transFilter }}</th>
-            <th class="text-right">{{ 'text.subtotal' | transFilter }}</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr v-if="lines.length === 0">
-            <td colspan="4" class="text-center">
-              {{ 'text.your_cart_is_empty' | transFilter }}
-            </td>
-          </tr>
-          <cart-line v-for="line in lines" v-bind:key="line.product.id"
-                     v-bind:line="line"
-                     v-on:quantity="handleQuantityChange(line, $event)"
-                     v-on:remove="remove"
-          />
-          </tbody>
-          <tfoot v-if="lines.length > 0">
-          <tr>
-            <td colspan="3" class="text-right">Total:</td>
-            <td class="text-right">
-              {{ totalPrice | currencyFilter }}
-            </td>
-          </tr>
-          </tfoot>
-        </template>
-      </v-simple-table>
-      <v-row>
-        <v-col>
-          <div class="text-center">
-            <v-btn large
-                   class="ma-2"
-                   color="primary"
-                   to="/"
-            >
-              {{ 'btn.continue_shopping' | transFilter }}
-            </v-btn>
+    <h3 class="text-center mb-4">
+        {{ $filters.transFilter('text.cart') }}
+    </h3>
 
-            <v-btn large
-                   class="ma-2"
-                   color="primary"
-                   to="/order"
-                   :disabled="lines.length === 0"
-            >
-              {{ 'btn.checkout' | transFilter }}
-            </v-btn>
-          </div>
-        </v-col>
-      </v-row>
-    </v-container>
-  </v-container>
+    <empty v-if="cartStore.getLines().length === 0"/>
+    <div v-else>
+        <table class="table">
+            <thead>
+            <tr>
+                <th class="text-left">{{ $filters.transFilter('text.quantity') }}</th>
+                <th class="text-left">{{ $filters.transFilter('text.product') }}</th>
+                <th class="text-right">{{ $filters.transFilter('text.price') }}</th>
+                <th class="text-right">{{ $filters.transFilter('text.subtotal') }}</th>
+            </tr>
+            </thead>
+            <tbody>
+            <shopping-cart-line
+                v-for="line in cartStore.getLines()"
+                :key="line.product.id"
+                :line="line"
+                v-on:quantity="cartStore.changeQuantity(line, $event)"
+                v-on:remove="cartStore.removeLine(line)"
+            />
+            </tbody>
+            <tfoot>
+            <tr>
+                <td colspan="3" class="text-right">
+                    {{ $filters.transFilter('text.total') }}:
+                </td>
+                <td class="text-right">
+                    {{ $filters.currencyFilter(cartStore.totalPrice) }}
+                </td>
+            </tr>
+            </tfoot>
+        </table>
+
+        <div class="text-center">
+            <router-link :to="{name: 'home'}" class="btn btn-success me-3">
+                {{ $filters.transFilter('btn.continue_shopping') }}
+            </router-link>
+
+            <router-link :to="{name: 'order'}" class="btn btn-warning">
+                {{ $filters.transFilter('btn.checkout') }}
+            </router-link>
+        </div>
+    </div>
 </template>
 
-<script>
-import { mapState, mapMutations, mapGetters } from 'vuex'
-import CartLine from '../../components/ShoppingCartLine'
-import Empty from '../../components/Empty'
+<script setup lang="ts">
+import {useCartStore} from '@/store/module/cart'
+import ShoppingCartLine from '@/components/ShoppingCartLine.vue'
+import Empty from '@/components/Empty.vue'
 
-export default {
-  components: {
-    CartLine,
-    Empty
-  },
-  computed: {
-    ...mapState({ lines: state => state.cart.lines }),
-    ...mapGetters({ totalPrice: 'cart/totalPrice' })
-  },
-  methods: {
-    ...mapMutations({
-      change: 'cart/changeQuantity',
-      remove: 'cart/removeLine'
-    }),
-    handleQuantityChange (line, $event) {
-      this.change({ line, quantity: $event })
-    }
-  }
-}
+const cartStore = useCartStore()
 </script>

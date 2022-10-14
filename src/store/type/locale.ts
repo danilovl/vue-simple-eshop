@@ -1,4 +1,4 @@
 export type LocaleState = {
-  locale: string;
-  locales: { [key: string]: string };
+    locale: string;
+    locales: { [key: string]: string };
 }

@@ -1,28 +1,27 @@
 <template>
-  <v-btn
-    v-if="isAuthenticated"
-    icon
-    :to="to">
-    <v-icon>
-      mdi-pencil-outline
-    </v-icon>
-  </v-btn>
+    <font-awesome-icon
+        v-if="authStore.isAuthenticated"
+        icon="fa-solid fa-screwdriver-wrench"
+        class="cursor-pointer"
+        @click="toRoute(to)"
+    />
 </template>
 
-<script>
-import { mapGetters } from 'vuex'
+<script setup lang="ts">
+import {useRouter} from 'vue-router'
+import {useAuthStore} from '@/store/module/auth'
 
-export default {
-  props: {
+defineProps({
     to: {
-      type: Object,
-      required: true
+        type: Object,
+        required: true
     }
-  },
-  computed: {
-    ...mapGetters({
-      isAuthenticated: 'auth/isAuthenticated'
-    })
-  }
+})
+
+const authStore = useAuthStore()
+const router = useRouter()
+
+const toRoute = (route: Object): void => {
+    router.push(route)
 }
 </script>

@@ -1,32 +1,23 @@
 <template>
-  <div>
-    <v-text-field
-      v-model="searchTerm"
-    />
-  </div>
+    <form class="d-flex">
+        <input
+            class="form-control me-2"
+            type="search"
+            v-model="searchTerm"
+            :placeholder="$filters.transFilter('btn.search')"
+        >
+    </form>
 </template>
 
-<script>
-import { mapGetters, mapActions } from 'vuex'
+<script setup lang="ts">
+import {ref, watch} from 'vue'
+import {useProductsStore} from '@/store/module/products'
 
-export default {
-  data () {
-    return {
-      searchTerm: this.getSearchTerm()
-    }
-  },
-  methods: {
-    ...mapGetters({
-      getSearchTerm: 'products/getSearchTerm'
-    }),
-    ...mapActions({
-      setSearchTerm: 'products/setSearchTerm'
-    })
-  },
-  watch: {
-    async searchTerm (searchTerm) {
-      await this.setSearchTerm(searchTerm)
-    }
-  }
-}
+const productsStore = useProductsStore()
+const searchTerm = ref<string>(productsStore.getSearchTerm())
+
+watch(
+    (): string => searchTerm.value,
+    (searchTerm: string) => productsStore.setSearchTerm(searchTerm)
+)
 </script>

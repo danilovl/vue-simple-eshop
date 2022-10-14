@@ -1,34 +1,25 @@
 <template>
-  <v-select
-    v-model="locale"
-    :items="getLocalesSelect"
-    :label="getLocaleLabel"
-  />
+    <form class="d-flex">
+        <select v-model="locale" class="form-select me-2">
+            <option v-for="option in localeStore.getLocalesSelect" :value="option.value">
+                {{ option.text }}
+            </option>
+        </select>
+    </form>
 </template>
 
-<script>
-import { mapGetters, mapActions } from 'vuex'
+<script setup lang="ts">
+import {computed} from 'vue'
+import {useLocaleStore} from '@/store/module/locale'
 
-export default {
-  computed: {
-    ...mapGetters({
-      getLocaleLabel: 'locale/getLocaleLabel',
-      getLocale: 'locale/getLocale',
-      getLocalesSelect: 'locale/getLocalesSelect'
-    }),
-    locale: {
-      get () {
-        return this.$store.state.locale.locale
-      },
-      set (locale) {
-        this.setLocale(locale)
-      }
+const localeStore = useLocaleStore()
+
+const locale = computed({
+    get(): string {
+        return localeStore.getLocale
+    },
+    set(locale: string): void {
+        localeStore.setLocale(locale)
     }
-  },
-  methods: {
-    ...mapActions({
-      setLocale: 'locale/setLocale'
-    })
-  }
-}
+})
 </script>

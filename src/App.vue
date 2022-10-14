@@ -1,29 +1,36 @@
 <template>
-  <div id="app">
-    <router-view></router-view>
-  </div>
+  <router-view v-slot="{ Component }">
+    <suspense>
+      <component :is="Component"/>
+    </suspense>
+  </router-view>
 </template>
 
-<script>
-import { mapActions } from 'vuex'
+<script lang="ts">
+import {defineComponent, getCurrentInstance, onMounted} from 'vue'
+import {useLocaleStore} from '@/store/module/locale'
+import {useAuthStore} from '@/store/module/auth'
+import {useCartStore} from '@/store/module/cart'
+import {useFavoriteStore} from '@/store/module/favorite'
 
-export default {
-  name: 'app',
-  methods: {
-    ...mapActions({
-      initializeAuthenticate: 'auth/initializeAuthenticate',
-      initializeCart: 'cart/initializeCart',
-      initializeFavorite: 'favorite/initializeFavorite',
-      initializeLocale: 'locale/initializeLocale'
-    })
-  },
-  async created () {
-    this.initializeLocale(this.$store)
-    await this.initializeAuthenticate()
-    this.initializeCart(this.$store)
-    this.initializeFavorite(this.$store)
+export default defineComponent({
+    name: 'App',
+    setup(): void {
+        const localeStore = useLocaleStore()
+        const authStore = useAuthStore()
+        const cartStore = useCartStore()
+        const favoriteStore = useFavoriteStore()
 
-    this.$version()
-  }
-}
+        onMounted(async (): Promise<any> => {
+            localeStore.initializeLocale()
+            await authStore.initializeAuthenticate()
+            cartStore.initializeCart()
+            favoriteStore.initializeFavorite()
+        })
+
+        const app = getCurrentInstance()
+        const version = app?.appContext.config.globalProperties.$version
+        version()
+    }
+})
 </script>

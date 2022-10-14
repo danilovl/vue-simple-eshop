@@ -1,46 +1,28 @@
 <template>
-  <v-card-actions>
-    <v-btn
-      color="deep-purple lighten-2"
-      icon
-      @click="addProductToCart(product)"
-    >
-      <v-icon>
-        mdi-cart-plus
-      </v-icon>
-    </v-btn>
-    <v-btn
-      v-if="isProductInCart()(product)"
-      color="deep-purple lighten-2"
-      icon
-      @click="removeProductFromCart(product)"
-    >
-      <v-icon>
-        mdi-cart-minus
-      </v-icon>
-    </v-btn>
-  </v-card-actions>
+    <font-awesome-icon
+        icon="fa-solid fa-plus"
+        class="cursor-pointer"
+        @click="cartStore.addProduct(product)"
+    />
+
+    <font-awesome-icon
+        v-if="cartStore.isProductInCart(product)"
+        icon="fa-solid fa-minus"
+        class="cursor-pointer ms-2"
+        @click="cartStore.removeProduct(product)"
+    />
 </template>
 
-<script>
-import { mapGetters, mapMutations } from 'vuex'
-import { ProductModel } from '@/model/product-model'
+<script setup lang="ts">
+import {ProductModel} from '@/model/product-model'
+import {useCartStore} from '@/store/module/cart'
 
-export default {
-  props: {
+defineProps({
     product: {
-      type: [ProductModel, Object, Function],
-      required: true
+        type: [ProductModel, Object],
+        required: true
     }
-  },
-  methods: {
-    ...mapGetters({
-      isProductInCart: 'cart/isProductInCart'
-    }),
-    ...mapMutations({
-      addProductToCart: 'cart/addProduct',
-      removeProductFromCart: 'cart/removeProduct'
-    })
-  }
-}
+})
+
+const cartStore = useCartStore()
 </script>

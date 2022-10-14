@@ -1,28 +1,18 @@
 <template>
-  <div>
-    <router-link to="/favorite" class="btn btn-sm bg-dark text-white"
-       v-bind:disabled="itemCount === 0"
-    >
-      <v-btn icon>
-        <v-badge
-          color="green"
-          :content="itemCount"
+    <div class="me-1">
+        <router-link
+            class="btn btn-sm bg-dark text-white"
+            :to="{name: 'favorite'}"
+            :disabled="favoriteStore.itemCount === 0"
         >
-          <v-icon>mdi-heart</v-icon>
-        </v-badge>
-      </v-btn>
-    </router-link>
-  </div>
+            <font-awesome-icon icon="fa-regular fa-heart"/>
+            {{ favoriteStore.itemCount }}
+        </router-link>
+    </div>
 </template>
 
-<script>
-import { mapGetters } from 'vuex'
+<script setup lang="ts">
+import {useFavoriteStore} from '@/store/module/favorite'
 
-export default {
-  computed: {
-    ...mapGetters({
-      itemCount: 'favorite/itemCount'
-    })
-  }
-}
+const favoriteStore = useFavoriteStore()
 </script>

@@ -1,57 +1,59 @@
 <template>
     <tr>
         <td>
-        <input type="number" class="form-control-sm"
+            <input
+                type="number"
+                class="form-control-sm"
                 style="width:5em"
-                v-bind:value="qvalue"
-                v-on:input="sendChangeEvent"/>
+                :value="qValue"
+                v-on:input="sendChangeEvent"
+            />
         </td>
         <td>
-          <router-link :to="{ name: 'product_detail', params: { id: line.product.id }}">
-            {{ line.product.title }}
-          </router-link>
+            <router-link :to="{name: 'product_detail', params: { id: line.product.id }}">
+                {{ line.product.title }}
+            </router-link>
         </td>
         <td class="text-right">
-            {{ line.product.price | currencyFilter }}
+            {{ $filters.currencyFilter(line.product.price) }}
         </td>
         <td class="text-right">
-            {{ (line.quantity * line.product.price) | currencyFilter }}
+            {{ $filters.currencyFilter(line.quantity * line.product.price) }}
         </td>
         <td class="text-center">
-          <v-btn small color="error"
-                 v-on:click="sendRemoveEvent">
-            {{ 'btn.delete' | transFilter }}
-          </v-btn>
+            <button class="btn btn-danger" v-on:click="sendRemoveEvent">
+                {{ $filters.transFilter('btn.delete') }}
+            </button>
         </td>
     </tr>
 </template>
-<script>
-export default {
-  props: {
+
+<script setup lang="ts">
+import {ref} from 'vue'
+import {BasketModel} from '@/model/basket-model'
+
+const props = defineProps({
     line: {
-      type: Object,
-      required: true
+        type: [BasketModel, Object],
+        required: true
     }
-  },
-  data: function () {
-    return {
-      qvalue: this.line.quantity
+})
+const emit = defineEmits(['quantity', 'remove'])
+
+const qValue = ref<number>(props.line.quantity)
+
+const sendChangeEvent = ($event: any): void => {
+    if ($event.target.value > 0) {
+        emit('quantity', Number($event.target.value))
+        qValue.value = $event.target.value
+    } else {
+        emit('quantity', 1)
+        qValue.value = 1
+        $event.target.value = qValue.value
     }
-  },
-  methods: {
-    sendChangeEvent ($event) {
-      if ($event.target.value > 0) {
-        this.$emit('quantity', Number($event.target.value))
-        this.qvalue = $event.target.value
-      } else {
-        this.$emit('quantity', 1)
-        this.qvalue = 1
-        $event.target.value = this.qvalue
-      }
-    },
-    sendRemoveEvent () {
-      this.$emit('remove', this.line)
-    }
-  }
+}
+
+const sendRemoveEvent = (): void => {
+    emit('remove', props.line)
 }
 </script>

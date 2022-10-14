@@ -1,20 +1,13 @@
 <template>
-  <div class="text-center">
-    <v-overlay :value="isLoading" :absolute="isAbsolute">
-      <v-progress-circular indeterminate size="64"/>
-    </v-overlay>
-  </div>
+    <div v-if="loaderStore.isLoading" class="d-flex justify-content-center spinner-loading">
+        <div class="spinner-border">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
 </template>
 
-<script>
-import { mapGetters } from 'vuex'
+<script setup lang="ts">
+import {useLoaderStore} from '@/store/module/loader'
 
-export default {
-  computed: {
-    ...mapGetters({
-      isLoading: 'loader/isLoading',
-      isAbsolute: 'loader/isAbsolute'
-    })
-  }
-}
+const loaderStore = useLoaderStore()
 </script>

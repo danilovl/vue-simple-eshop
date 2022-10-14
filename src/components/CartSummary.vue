@@ -1,32 +1,22 @@
 <template>
-  <div>
-    <router-link to="/cart" class="btn btn-sm bg-dark text-white"
-       v-bind:disabled="itemCount === 0"
-    >
-      <v-btn icon>
-        <v-badge
-          color="green"
-          :content="itemCount"
+    <div class="me-2">
+        <router-link
+            class="btn btn-sm bg-dark text-white"
+            :to="{name: 'cart'}"
+            :disabled="cartStore.itemCount === 0"
         >
-          <v-icon>mdi-basket</v-icon>
-        </v-badge>
-      </v-btn>
-    </router-link>
-    <span v-if="itemCount > 0">
-      {{ totalPrice | currencyFilter }}
-     </span>
-  </div>
+            <font-awesome-icon icon="fa-solid fa-cart-shopping"/>
+            {{ cartStore.itemCount }}
+
+            <span v-if="cartStore.itemCount > 0">
+                 ({{ $filters.currencyFilter(cartStore.totalPrice) }})
+            </span>
+        </router-link>
+    </div>
 </template>
 
-<script>
-import { mapGetters } from 'vuex'
+<script setup lang="ts">
+import {useCartStore} from '@/store/module/cart'
 
-export default {
-  computed: {
-    ...mapGetters({
-      itemCount: 'cart/itemCount',
-      totalPrice: 'cart/totalPrice'
-    })
-  }
-}
+const cartStore = useCartStore()
 </script>

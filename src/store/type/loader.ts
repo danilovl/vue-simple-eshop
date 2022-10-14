@@ -1,4 +1,4 @@
 export type LoaderState = {
-  loading: boolean;
-  absolute: boolean;
+    loading: boolean;
+    absolute: boolean;
 }

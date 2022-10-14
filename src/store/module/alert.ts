@@ -1,42 +1,27 @@
-import { AlertModel } from '@/model/alert-model'
-import { ActionTree, GetterTree, MutationTree } from 'vuex'
-import { Module, RootState } from '../type'
-import { AlertState } from '@/store/type/alert'
+import {reactive} from 'vue'
+import {defineStore} from 'pinia'
+import type {AlertModel} from '@/model/alert-model'
+import type {AlertState} from '@/store/type/alert'
 
-const state: AlertState = {
-  alerts: []
-}
+export const useAlertStore = defineStore('alert', ()  => {
+    const state = reactive<AlertState>({
+        alerts: []
+    }) as AlertState
 
-const getters: GetterTree<AlertState, RootState> = {
-  getAlerts: function (state: AlertState): AlertModel[] {
-    return state.alerts
-  }
-}
+    const getAlertsOnce = (): AlertModel[] => {
+        setTimeout((): void => {
+            state.alerts = []
+        }, 3000)
 
-const mutations: MutationTree<AlertState> = {
-  addAlert (state: AlertState, alert: AlertModel): void {
-    state.alerts.push(alert)
-  },
-  clearAlerts (state: AlertState): void {
-    state.alerts = []
-  }
-}
+        return state.alerts
+    }
 
-const actions: ActionTree<AlertState, RootState> = {
-  addAlert (context: any, alert: AlertModel): void {
-    context.commit('addAlert', alert)
-  },
-  clearAlerts (context: any): void {
-    context.commit('clearAlerts')
-  }
-}
+    const addAlert = (alert: AlertModel): void => {
+        state.alerts.push(alert)
+    }
 
-const Alert: Module<AlertState, RootState> = {
-  namespaced: true,
-  state,
-  getters,
-  actions,
-  mutations
-}
-
-export default Alert
+    return {
+        getAlertsOnce,
+        addAlert
+    }
+})

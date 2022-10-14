@@ -1,19 +1,12 @@
 <template>
-  <v-row class="mb-6"
-         justify="center"
-         no-gutters
-  >
-    <v-banner two-line>
-      <v-avatar
-        slot="icon"
-        color="deep-purple accent-4"
-        size="150"
-      >
-        <v-icon color="white">
-          mdi-delete-empty
-        </v-icon>
-      </v-avatar>
-      {{ 'text.empty' | transFilter }}
-    </v-banner>
-  </v-row>
+    <div class="d-flex flex-wrap justify-content-center">
+        <h4 class="shadow-lg p-3 mb-5 bg-body rounded">
+            {{ $filters.transFilter('text.empty') }}
+        </h4>
+    </div>
+    <div class="d-flex flex-wrap justify-content-center">
+        <router-link :to="{name: 'home'}" class="btn btn-success">
+            {{ $filters.transFilter('btn.return_to_store') }}
+        </router-link>
+    </div>
 </template>

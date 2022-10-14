@@ -1,30 +1,22 @@
 <template>
-  <v-btn icon>
-    <v-icon :color="isProductIsFavorite()(product) ? 'red' : 'green'"
-            @click="addOrRemoveProduct(product)">
-      mdi-heart
-    </v-icon>
-  </v-btn>
+    <font-awesome-icon
+        icon="fa-regular fa-heart"
+        class="cursor-pointer"
+        :beat="favoriteStore.isProductIsFavorite(product)"
+        @click="favoriteStore.addOrRemoveProduct(product)"
+    />
 </template>
 
-<script>
-import { mapGetters, mapMutations } from 'vuex'
-import { ProductModel } from '@/model/product-model'
+<script setup lang="ts">
+import {ProductModel} from '@/model/product-model'
+import {useFavoriteStore} from '@/store/module/favorite'
 
-export default {
-  props: {
+defineProps({
     product: {
-      type: [ProductModel, Object, Function],
-      required: true
+        type: [ProductModel, Object],
+        required: true
     }
-  },
-  methods: {
-    ...mapGetters({
-      isProductIsFavorite: 'favorite/isProductIsFavorite'
-    }),
-    ...mapMutations({
-      addOrRemoveProduct: 'favorite/addOrRemoveProduct'
-    })
-  }
-}
+})
+
+const favoriteStore = useFavoriteStore()
 </script>
