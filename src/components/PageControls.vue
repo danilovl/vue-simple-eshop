@@ -4,7 +4,7 @@
             :total-items="productsStore.getState().totalCount"
             :items-per-page="productsStore.getState().pageSize"
             :max-pages-shown="productsStore.getState().totalVisible"
-            :current-page="productsStore.getCurrentPage()"
+            v-model="page"
             :on-click="onClickHandler"
         />
     </div>

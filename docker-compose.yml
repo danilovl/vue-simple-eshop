@@ -6,8 +6,8 @@ services:
       context: ./
       dockerfile: ./docker/node/Dockerfile
     volumes:
-      - "./:/var/www/html/app"
+      - './:/var/www/html/app'
     working_dir: /var/www/html/app
     ports:
-      - "5174:5174"
-      - "3500:3500"
+      - '5174:5174'
+      - '3500:3500'
