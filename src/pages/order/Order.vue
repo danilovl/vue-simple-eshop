@@ -10,7 +10,7 @@
                     <label class="form-label">
                         {{ $filters.transFilter('form.name') }}
                     </label>
-                    <input v-model="name" type="text" class="form-control">
+                    <input v-model="state.name" type="text" class="form-control">
                     <div class="form-text text-danger" v-for="(error, index) of nameErrors" :key="index">
                         <div class="error-msg">{{ error }}</div>
                     </div>
@@ -19,7 +19,7 @@
                     <label class="form-label">
                         {{ $filters.transFilter('form.email') }}
                     </label>
-                    <input v-model="email" type="text" class="form-control">
+                    <input v-model="state.email" type="text" class="form-control">
                     <div class="form-text text-danger" v-for="(error, index) of emailErrors" :key="index">
                         <div class="error-msg">{{ error }}</div>
                     </div>
@@ -28,7 +28,7 @@
                     <label class="form-label">
                         {{ $filters.transFilter('form.city') }}
                     </label>
-                    <input v-model="city" type="text" class="form-control">
+                    <input v-model="state.city" type="text" class="form-control">
                     <div class="form-text text-danger" v-for="(error, index) of cityErrors" :key="index">
                         <div class="error-msg">{{ error }}</div>
                     </div>
@@ -37,14 +37,14 @@
                     <label class="form-label">
                         {{ $filters.transFilter('form.address') }}
                     </label>
-                    <input v-model="address" type="text" class="form-control">
+                    <input v-model="state.address" type="text" class="form-control">
                     <div class="form-text text-danger" v-for="(error, index) of addressErrors" :key="index">
                         <div class="error-msg">{{ error }}</div>
                     </div>
                 </div>
 
                 <div class="mb-3 form-check">
-                    <input v-model="checkbox" type="checkbox" class="form-check-input">
+                    <input v-model="state.checkbox" type="checkbox" class="form-check-input">
                     <label class="form-check-label">
                         {{ $filters.transFilter('form.do_you_agree') }}
                     </label>
@@ -64,165 +64,162 @@
     </div>
 </template>
 
-<script lang="ts">
-import {defineComponent} from 'vue'
+<script setup lang="ts">
+import {computed, reactive} from 'vue'
 import {useVuelidate} from '@vuelidate/core'
 import {required, maxLength, email} from '@vuelidate/validators'
 import {OrderModel} from '@/model/order-model'
 import {useCartStore} from '@/store/module/cart'
 import {useOrderStore} from '@/store/module/order'
+import {useRouter} from 'vue-router'
 
-export default defineComponent({
-    name: 'Order',
-    data: () => ({
-        name: '',
-        email: '',
-        city: '',
-        address: '',
-        checkbox: false
-    }),
-    validations: {
-        name: {
-            required,
-            maxLength: maxLength(10)
-        },
-        email: {
-            required,
-            email
-        },
-        city: {
-            required,
-            maxLength: maxLength(50)
-        },
-        address: {
-            required,
-            maxLength: maxLength(100)
-        },
-        checkbox: {
-            checked(val: boolean): boolean {
-                return val
-            }
-        }
+const router = useRouter()
+
+const state = reactive({
+    name: '',
+    email: '',
+    city: '',
+    address: '',
+    checkbox: false
+})
+
+const rules = {
+    name: {
+        required,
+        maxLength: maxLength(10)
     },
-    setup() {
-        const orderStore = useOrderStore()
-        const cartStore = useCartStore()
-
-        return {
-            v$: useVuelidate(),
-            storeOrder: orderStore.storeOrder,
-            clearCart: cartStore.clearCartData
-        }
+    email: {
+        required,
+        email
     },
-    computed: {
-        checkboxErrors(): string[] {
-            const errors: string[] = []
-            if (!this.v$.checkbox.$dirty) {
-                return errors
-            }
-
-            if (this.v$.checkbox.checked.$invalid) {
-                errors.push('You must agree to continue!')
-            }
-
-            return errors
-        },
-        nameErrors(): string[] {
-            const errors: string[] = []
-            if (!this.v$.name.$dirty) {
-                return errors
-            }
-
-            if (this.v$.name.maxLength.$invalid) {
-                errors.push('Name must be at most 10 characters long')
-            }
-
-            if (this.v$.name.required.$invalid) {
-                errors.push('Name is required.')
-            }
-
-            return errors
-        },
-        emailErrors(): string[] {
-            const errors: string[] = []
-            if (!this.v$.email.$dirty) {
-                return errors
-            }
-
-            if (this.v$.email.email.$invalid) {
-                errors.push('Must be is not valid e-mail')
-            }
-
-            if (this.v$.email.required.$invalid) {
-                errors.push('E-mail is required')
-            }
-
-            return errors
-        },
-        cityErrors(): string[] {
-            const errors: string[] = []
-            if (!this.v$.city.$dirty) {
-                return errors
-            }
-
-            if (this.v$.city.maxLength.$invalid) {
-                errors.push('City must be at most 150 characters long')
-            }
-
-            if (this.v$.city.required.$invalid) {
-                errors.push('City is required.')
-            }
-
-            return errors
-        },
-        addressErrors(): string[] {
-            const errors: string[] = []
-            if (!this.v$.address.$dirty) {
-                return errors
-            }
-
-            if (this.v$.address.maxLength.$invalid) {
-                errors.push('Address must be at most 10 characters long')
-            }
-
-            if (this.v$.address.required.$invalid) {
-                errors.push('Address is required.')
-            }
-
-            return errors
-        }
+    city: {
+        required,
+        maxLength: maxLength(50)
     },
-    methods: {
-        async submitOrder(): Promise<any> {
-            this.v$.$touch()
-
-            if (this.v$.$invalid) {
-                return
-            }
-
-            const cartStore = useCartStore()
-
-            const order = new OrderModel(
-                this.name,
-                this.email,
-                this.city,
-                this.address,
-                cartStore.getLines(),
-                false
-            )
-
-            await this.storeOrder(order)
-            this.clearCart()
-            await this.$router.push('/order-thanks')
-        },
-        clear(): void {
-            this.v$.$reset()
-            this.name = ''
-            this.email = ''
-            this.city = ''
-            this.address = ''
-            this.checkbox = false
+    address: {
+        required,
+        maxLength: maxLength(100)
+    },
+    checkbox: {
+        checked(val: boolean): boolean {
+            return val
         }
     }
+}
+
+const storeOrder = useOrderStore().storeOrder
+const clearCart = useCartStore().clearCartData
+const v$ = useVuelidate(rules, state)
+
+const checkboxErrors = computed((): string[] => {
+    const errors: string[] = []
+    if (!v$.value.checkbox.$dirty) {
+        return errors
+    }
+
+    if (v$.value.checkbox.checked.$invalid) {
+        errors.push('You must agree to continue!')
+    }
+
+    return errors
 })
+
+const nameErrors = computed((): string[] => {
+    const errors: string[] = []
+    if (!v$.value.name.$dirty) {
+        return errors
+    }
+
+    if (v$.value.name.maxLength.$invalid) {
+        errors.push('Name must be at most 10 characters long')
+    }
+
+    if (v$.value.name.required.$invalid) {
+        errors.push('Name is required.')
+    }
+
+    return errors
+})
+
+const emailErrors = computed((): string[] => {
+    const errors: string[] = []
+    if (!v$.value.email.$dirty) {
+        return errors
+    }
+
+    if (v$.value.email.email.$invalid) {
+        errors.push('Must be is not valid e-mail')
+    }
+
+    if (v$.value.email.required.$invalid) {
+        errors.push('E-mail is required')
+    }
+
+    return errors
+})
+
+const cityErrors = computed((): string[] => {
+    const errors: string[] = []
+    if (!v$.value.city.$dirty) {
+        return errors
+    }
+
+    if (v$.value.city.maxLength.$invalid) {
+        errors.push('City must be at most 150 characters long')
+    }
+
+    if (v$.value.city.required.$invalid) {
+        errors.push('City is required.')
+    }
+
+    return errors
+})
+
+const addressErrors = computed((): string[] => {
+    const errors: string[] = []
+    if (!v$.value.address.$dirty) {
+        return errors
+    }
+
+    if (v$.value.address.maxLength.$invalid) {
+        errors.push('Address must be at most 10 characters long')
+    }
+
+    if (v$.value.address.required.$invalid) {
+        errors.push('Address is required.')
+    }
+
+    return errors
+})
+
+const submitOrder = async (): Promise<any> => {
+    v$.value.$touch()
+    if (v$.value.$invalid) {
+        return
+    }
+
+    const cartStore = useCartStore()
+
+    const order = new OrderModel(
+        state.name,
+        state.email,
+        state.city,
+        state.address,
+        cartStore.getLines(),
+        false
+    )
+
+    await storeOrder(order)
+    clearCart()
+    await router.push('/order-thanks')
+}
+
+const clear = (): void => {
+    v$.value.$reset()
+    state.name = ''
+    state.email = ''
+    state.city = ''
+    state.address = ''
+    state.checkbox = false
+}
 </script>

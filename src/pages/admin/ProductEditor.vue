@@ -83,144 +83,138 @@
     </div>
 </template>
 
-<script lang="ts">
-import {defineComponent, reactive} from 'vue'
-import {useRoute} from 'vue-router'
+<script setup lang="ts">
+import {reactive} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
 import {useVuelidate} from '@vuelidate/core'
 import {required, decimal} from '@vuelidate/validators'
 import {useProductsStore} from '@/store/module/products'
 import {ProductModel} from '@/model/product-model'
+import {computed} from 'vue'
 
-export default defineComponent({
-    setup() {
-        const productsStore = useProductsStore()
-        const route = useRoute()
+const router = useRouter()
+const route = useRoute()
+const productsStore = useProductsStore()
 
-        const product = reactive({
-            id: null,
-            title: '',
-            description: '',
-            price: 0,
-            rating: 0,
-            ratingCount: 0,
-            image: ''
-        })
-        let editMode: boolean = route.params.op === 'edit'
-
-        if (editMode) {
-            const loadProduct = async (): Promise<any> => {
-                const productModel: ProductModel = await productsStore.getProduct(Number(route.params.id))
-                Object.assign(product, productModel)
-            }
-            loadProduct()
-        }
-
-        return {
-            v$: useVuelidate(),
-            product: product,
-            editMode: editMode,
-            addProduct: productsStore.addProduct,
-            updateProduct: productsStore.updateProduct,
-            getProduct: productsStore.getProduct
-        }
-    },
-    computed: {
-        titleErrors(): string[] {
-            const errors: string[] = []
-            if (!this.v$.product.title.$dirty) {
-                return errors
-            }
-
-            if (this.v$.product.title.required.$invalid) {
-                errors.push('Title is required.')
-            }
-
-            return errors
-        },
-        descriptionErrors(): string[] {
-            const errors: string[] = []
-            if (!this.v$.product.description.$dirty) {
-                return errors
-            }
-
-            if (this.v$.product.description.required.$invalid) {
-                errors.push('Description is required.')
-            }
-
-            return errors
-        },
-        priceErrors(): string[] {
-            const errors: string[] = []
-            if (!this.v$.product.price.$dirty) {
-                return errors
-            }
-
-            if (this.v$.product.price.required.$invalid) {
-                errors.push('Price is required.')
-            }
-
-            if (this.v$.product.price.decimal.$invalid) {
-                errors.push('Price is number.')
-            }
-
-            return errors
-        },
-        imageErrors(): string[] {
-            const errors: string[] = []
-            if (!this.v$.product.image.$dirty) {
-                return errors
-            }
-
-            if (this.v$.product.image.required.$invalid) {
-                errors.push('Image is required.')
-            }
-
-            return errors
-        }
-    },
-    validations: {
-        product: {
-            title: {
-                required
-            },
-            description: {
-                required
-            },
-            price: {
-                required,
-                decimal
-            },
-            image: {
-                required
-            }
-        }
-    },
-    methods: {
-        async handleSave(): Promise<any> {
-            this.v$.$touch()
-
-            if (this.v$.$invalid) {
-                return
-            }
-
-            const productModel: ProductModel = new ProductModel(
-                this.product.id,
-                this.product.title,
-                this.product.description,
-                this.product.price,
-                this.product.rating,
-                this.product.ratingCount,
-                this.product.image,
-            )
-
-            if (this.editMode) {
-                await this.updateProduct(productModel)
-            } else {
-                await this.addProduct(productModel)
-            }
-
-            await this.$router.push({name: 'admin_product_list'})
-        }
-    }
+const product = reactive({
+    id: null,
+    title: '',
+    description: '',
+    price: 0,
+    rating: 0,
+    ratingCount: 0,
+    image: ''
 })
+let editMode: boolean = route.params.op === 'edit'
+
+if (editMode) {
+    const loadProduct = async (): Promise<any> => {
+        const productModel: ProductModel = await productsStore.getProduct(Number(route.params.id))
+        Object.assign(product, productModel)
+    }
+    loadProduct()
+}
+
+const addProduct = productsStore.addProduct
+const updateProduct = productsStore.updateProduct
+
+const rules = {
+    title: {
+        required
+    },
+    description: {
+        required
+    },
+    price: {
+        required,
+        decimal
+    },
+    image: {
+        required
+    }
+}
+
+const v$ = useVuelidate(rules, product)
+
+const titleErrors = computed((): string[] => {
+    const errors: string[] = []
+    if (!v$.value.title.$dirty) {
+        return errors
+    }
+
+    if (v$.value.title.required.$invalid) {
+        errors.push('Title is required.')
+    }
+
+    return errors
+})
+
+const descriptionErrors = computed((): string[] => {
+    const errors: string[] = []
+    if (!v$.value.description.$dirty) {
+        return errors
+    }
+
+    if (v$.value.description.required.$invalid) {
+        errors.push('Description is required.')
+    }
+
+    return errors
+})
+
+const priceErrors = computed((): string[] => {
+    const errors: string[] = []
+    if (!v$.value.price.$dirty) {
+        return errors
+    }
+
+    if (v$.value.price.required.$invalid) {
+        errors.push('Price is required.')
+    }
+
+    if (v$.value.price.decimal.$invalid) {
+        errors.push('Price is number.')
+    }
+
+    return errors
+})
+
+const imageErrors = computed((): string[] => {
+    const errors: string[] = []
+    if (!v$.value.image.$dirty) {
+        return errors
+    }
+
+    if (v$.value.image.required.$invalid) {
+        errors.push('Image is required.')
+    }
+
+    return errors
+})
+
+const handleSave = async (): Promise<any> => {
+    v$.value.$touch()
+
+    if (v$.value.$invalid) {
+        return
+    }
+
+    const productModel: ProductModel = new ProductModel(
+        product.id,
+        product.title,
+        product.description,
+        product.price,
+        product.rating,
+        product.ratingCount,
+        product.image,
+    )
+
+    if (editMode) {
+        await updateProduct(productModel)
+    } else {
+        await addProduct(productModel)
+    }
+
+    await router.push({name: 'admin_product_list'})
+}
 </script>

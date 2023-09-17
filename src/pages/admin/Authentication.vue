@@ -10,7 +10,7 @@
                     <label class="form-label">
                         {{ $filters.transFilter('form.username') }}
                     </label>
-                    <input v-model="username" type="text" class="form-control">
+                    <input v-model="state.username" type="text" class="form-control">
                     <div class="form-text text-danger" v-for="(error, index) of usernameErrors" :key="index">
                         <div class="error-msg">{{ error }}</div>
                     </div>
@@ -20,7 +20,7 @@
                     <label class="form-label">
                         {{ $filters.transFilter('form.password') }}
                     </label>
-                    <input v-model="password" type="password" class="form-control">
+                    <input v-model="state.password" type="password" class="form-control">
                     <div class="form-text text-danger" v-for="(error, index) of passwordErrors" :key="index">
                         <div class="error-msg">{{ error }}</div>
                     </div>
@@ -37,8 +37,7 @@
     </div>
 </template>
 
-<script lang="ts">
-import {defineComponent} from 'vue'
+<script setup lang="ts">
 import {useVuelidate} from '@vuelidate/core'
 import {required, minLength, maxLength} from '@vuelidate/validators'
 import {AuthModel} from '@/model/auth-model'
@@ -47,95 +46,92 @@ import {useAlertStore} from '@/store/module/alert'
 import {AlertModel} from '@/model/alert-model'
 import AlertConstant from '@/constant/alert-constant'
 import transFilter from '@/filter/trans-filter'
+import {computed, reactive} from 'vue'
+import {useRouter} from 'vue-router'
 
-export default defineComponent({
-    name: 'Authentication',
-    data: () => ({
-        showPassword: false,
-        username: '',
-        password: ''
-    }),
-    validations: {
-        username: {
-            required,
-            maxLength: maxLength(10)
-        },
-        password: {
-            required,
-            minLength: minLength(4),
-            maxLength: maxLength(10)
-        }
-    },
-    setup() {
-        const authStore = useAuthStore()
+const router = useRouter()
 
-        return {
-            authStore,
-            v$: useVuelidate()
-        }
-    },
-    computed: {
-        usernameErrors(): string[] {
-            const errors: string[] = []
-            if (!this.v$.username.$dirty) {
-                return errors
-            }
-
-            if (this.v$.username.maxLength.$invalid) {
-                errors.push('Username must be at most 10 characters long')
-            }
-
-            if (this.v$.username.required.$invalid) {
-                errors.push('Username is required.')
-            }
-
-            return errors
-        },
-        passwordErrors(): string[] {
-            const errors: any[] = []
-            if (!this.v$.password.$dirty) {
-                return errors
-            }
-
-            if (this.v$.password.minLength.$invalid) {
-                errors.push('Password must be at more 4 characters long')
-            }
-
-            if (this.v$.password.maxLength.$invalid) {
-                errors.push('Password must be at less 10 characters long')
-            }
-
-            if (this.v$.password.required.$invalid) {
-                errors.push('Password is required')
-            }
-
-            return errors
-        }
-    },
-    methods: {
-        async handleAuth(): Promise<any> {
-            this.v$.$touch()
-            if (this.v$.$invalid) {
-                return
-            }
-
-            const authModel = new AuthModel(this.username, this.password)
-            await this.authStore.authenticate(authModel)
-
-            if (this.authStore.isAuthenticated) {
-                await this.$router.push({name: 'admin_product_list'})
-            } else {
-                const alertStore = useAlertStore()
-                const alert: AlertModel = new AlertModel(AlertConstant.ERROR, transFilter('text.authentication_failed'))
-
-                alertStore.addAlert(alert)
-            }
-        },
-        clear(): void {
-            this.v$.$reset()
-            this.username = ''
-            this.password = ''
-        }
-    }
+const state = reactive({
+    showPassword: false,
+    username: '',
+    password: ''
 })
+
+const rules = {
+    username: {
+        required,
+        maxLength: maxLength(10)
+    },
+    password: {
+        required,
+        minLength: minLength(4),
+        maxLength: maxLength(10)
+    }
+}
+const authStore = useAuthStore()
+const v$ = useVuelidate(rules, state)
+
+const usernameErrors = computed((): string[] => {
+    const errors: string[] = []
+    if (!v$.value.username.$dirty) {
+        return errors
+    }
+
+    if (v$.value.username.maxLength.$invalid) {
+        errors.push('Username must be at most 10 characters long')
+    }
+
+    if (v$.value.username.required.$invalid) {
+        errors.push('Username is required.')
+    }
+
+    return errors
+})
+
+const passwordErrors = computed((): string[] => {
+    const errors: any[] = []
+    if (!v$.value.password.$dirty) {
+        return errors
+    }
+
+    if (v$.value.password.minLength.$invalid) {
+        errors.push('Password must be at more 4 characters long')
+    }
+
+    if (v$.value.password.maxLength.$invalid) {
+        errors.push('Password must be at less 10 characters long')
+    }
+
+    if (v$.value.password.required.$invalid) {
+        errors.push('Password is required')
+    }
+
+    return errors
+})
+
+
+const handleAuth = async (): Promise<any> => {
+    v$.value.$touch()
+    if (v$.value.$invalid) {
+        return
+    }
+
+    const authModel = new AuthModel(state.username, state.password)
+    await authStore.authenticate(authModel)
+
+    if (authStore.isAuthenticated) {
+        await router.push({name: 'admin_product_list'})
+    } else {
+        const alertStore = useAlertStore()
+        const alert: AlertModel = new AlertModel(AlertConstant.ERROR, transFilter('text.authentication_failed'))
+
+        alertStore.addAlert(alert)
+    }
+}
+
+const clear = (): void => {
+    v$.value.$reset()
+    state.username = ''
+    state.password = ''
+}
 </script>
