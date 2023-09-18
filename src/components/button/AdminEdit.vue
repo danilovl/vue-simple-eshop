@@ -11,12 +11,11 @@
 import {useRouter} from 'vue-router'
 import {useAuthStore} from '@/store/module/auth'
 
-defineProps({
-    to: {
-        type: Object,
-        required: true
-    }
-})
+interface Props {
+    to: Object
+}
+
+defineProps<Props>()
 
 const authStore = useAuthStore()
 const router = useRouter()

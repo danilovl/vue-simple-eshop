@@ -16,7 +16,7 @@
             </div>
         </div>
     </div>
-    <empty v-else/>
+    <Empty v-else/>
 </template>
 
 <script setup lang="ts">

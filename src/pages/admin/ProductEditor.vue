@@ -84,13 +84,12 @@
 </template>
 
 <script setup lang="ts">
-import {reactive} from 'vue'
+import {reactive, computed} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useVuelidate} from '@vuelidate/core'
 import {required, decimal} from '@vuelidate/validators'
 import {useProductsStore} from '@/store/module/products'
 import {ProductModel} from '@/model/product-model'
-import {computed} from 'vue'
 
 const router = useRouter()
 const route = useRoute()

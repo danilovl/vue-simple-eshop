@@ -2,7 +2,7 @@
     <header>
         <nav class="navbar navbar-expand-md navbar-dark bg-dark">
             <div class="container">
-                <toolbar/>
+                <Toolbar/>
             </div>
         </nav>
     </header>

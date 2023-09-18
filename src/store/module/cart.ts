@@ -11,13 +11,8 @@ export const useCartStore = defineStore('cart', ()  => {
         lines: []
     }) as CartState
 
-    const itemCount = computed((): string | number => {
-        const count = state.lines.reduce((total: any, line: any): number => total + line.quantity, 0)
-        if (count === 0) {
-            return '0'
-        }
-
-        return count
+    const itemCount = computed((): number => {
+        return state.lines.reduce((total: any, line: any): number => total + line.quantity, 0)
     })
 
     const totalPrice = computed((): number => {

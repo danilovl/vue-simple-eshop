@@ -3,7 +3,6 @@
         <router-link
             class="btn btn-sm bg-dark text-white"
             :to="{name: 'cart'}"
-            :disabled="cartStore.itemCount === 0"
         >
             <font-awesome-icon icon="fa-solid fa-cart-shopping"/>
             {{ cartStore.itemCount }}

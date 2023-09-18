@@ -1,11 +1,11 @@
 <template>
     <header-section/>
-    <alert/>
+    <Alert/>
 
     <main>
         <div class="album py-5 bg-light">
             <div class="container container-min-height">
-                <loader/>
+                <Loader/>
                 <router-view/>
             </div>
         </div>

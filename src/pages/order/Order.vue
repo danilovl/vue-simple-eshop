@@ -66,12 +66,12 @@
 
 <script setup lang="ts">
 import {computed, reactive} from 'vue'
+import {useRouter} from 'vue-router'
 import {useVuelidate} from '@vuelidate/core'
 import {required, maxLength, email} from '@vuelidate/validators'
 import {OrderModel} from '@/model/order-model'
 import {useCartStore} from '@/store/module/cart'
 import {useOrderStore} from '@/store/module/order'
-import {useRouter} from 'vue-router'
 
 const router = useRouter()
 

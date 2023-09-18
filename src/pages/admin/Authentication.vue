@@ -38,6 +38,8 @@
 </template>
 
 <script setup lang="ts">
+import {computed, reactive} from 'vue'
+import {useRouter} from 'vue-router'
 import {useVuelidate} from '@vuelidate/core'
 import {required, minLength, maxLength} from '@vuelidate/validators'
 import {AuthModel} from '@/model/auth-model'
@@ -46,8 +48,6 @@ import {useAlertStore} from '@/store/module/alert'
 import {AlertModel} from '@/model/alert-model'
 import AlertConstant from '@/constant/alert-constant'
 import transFilter from '@/filter/trans-filter'
-import {computed, reactive} from 'vue'
-import {useRouter} from 'vue-router'
 
 const router = useRouter()
 

@@ -48,22 +48,21 @@
 
 <script setup lang="ts">
 import {useRouter} from 'vue-router'
-import {ProductModel} from '@/model/product-model'
+import type {ProductModel} from '@/model/product-model'
 import HeartFavorite from '@/components/button/HeartFavorite.vue'
 import AddToCart from '@/components/button/AddToCart.vue'
 import {useCartStore} from '@/store/module/cart'
 
-defineProps({
-    product: {
-        type: [ProductModel, Object],
-        required: true
-    }
-})
+interface Props {
+    product: ProductModel
+}
+
+defineProps<Props>()
 
 const cartStore = useCartStore()
 const router = useRouter()
 
-const toRoute = (route: string): void => {
+const toRoute = (route: Object): void => {
     router.push(route)
 }
 </script>

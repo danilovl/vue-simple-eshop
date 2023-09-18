@@ -10,7 +10,7 @@
             </div>
             <page-control/>
         </div>
-        <empty v-else-if="!loaderStore.isLoading"/>
+        <Empty v-else-if="!loaderStore.isLoading"/>
     </div>
 </template>
 

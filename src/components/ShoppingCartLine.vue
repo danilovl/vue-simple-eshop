@@ -30,14 +30,13 @@
 
 <script setup lang="ts">
 import {ref} from 'vue'
-import {BasketModel} from '@/model/basket-model'
+import type {BasketModel} from '@/model/basket-model'
 
-const props = defineProps({
-    line: {
-        type: [BasketModel, Object],
-        required: true
-    }
-})
+interface Props {
+    line: BasketModel
+}
+
+const props = defineProps<Props>()
 const emit = defineEmits(['quantity', 'remove'])
 
 const qValue = ref<number>(props.line.quantity)

@@ -3,7 +3,7 @@
         {{ $filters.transFilter('text.cart') }}
     </h3>
 
-    <empty v-if="cartStore.getLines().length === 0"/>
+    <Empty v-if="cartStore.getLines().length === 0"/>
     <div v-else>
         <table class="table">
             <thead>
