@@ -16,7 +16,5 @@ app.use(router)
   .use(createPinia())
   .use(fontAwesomePlugin)
   .use(VueAwesomePaginate)
-  .use(consolePlugin, {
-    version: '1.0.0'
-  })
+  .use(consolePlugin)
   .mount('#app')
