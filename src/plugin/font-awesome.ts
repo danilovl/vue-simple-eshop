@@ -1,4 +1,4 @@
-import type {App} from '@vue/runtime-core'
+import type {App} from 'vue'
 import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
 import {library} from '@fortawesome/fontawesome-svg-core'
 import {faHeart} from '@fortawesome/free-regular-svg-icons'

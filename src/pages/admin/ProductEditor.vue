@@ -104,7 +104,7 @@ const product = reactive({
     ratingCount: 0,
     image: ''
 })
-let editMode: boolean = route.params.op === 'edit'
+const editMode: boolean = route.params.op === 'edit'
 
 if (editMode) {
     const loadProduct = async (): Promise<any> => {

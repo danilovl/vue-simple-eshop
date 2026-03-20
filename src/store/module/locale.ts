@@ -13,8 +13,8 @@ export const useLocaleStore = defineStore('locale', ()  => {
 
     const getLocale = computed((): string => state.locale)
     const getLocaleLabel = computed((): string => state.locales[state.locale])
-    const getLocales = computed((): Object => state.locales)
-    const getLocalesSelect = computed((): Object[] => {
+    const getLocales = computed((): object => state.locales)
+    const getLocalesSelect = computed((): object[] => {
         const locales = state.locales
 
         return Object.keys(locales).map(key => ({

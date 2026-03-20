@@ -12,7 +12,7 @@ import {useRouter} from 'vue-router'
 import {useAuthStore} from '@/store/module/auth'
 
 interface Props {
-    to: Object
+    to: object
 }
 
 defineProps<Props>()
@@ -20,7 +20,7 @@ defineProps<Props>()
 const authStore = useAuthStore()
 const router = useRouter()
 
-const toRoute = (route: Object): void => {
+const toRoute = (route: object): void => {
     router.push(route)
 }
 </script>

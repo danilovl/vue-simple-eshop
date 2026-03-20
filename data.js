@@ -1,23 +1,24 @@
-const faker = require('faker')
+const { faker } = require('@faker-js/faker');
 
-const products = []
+const products = [];
 
-faker.seed(100)
+faker.seed(100);
+
 for (let i = 1; i <= 50; i++) {
     products.push({
         id: i,
         title: faker.commerce.productName(),
-        description: faker.lorem.text(),
-        price: faker.commerce.price(0, 10000),
-        rating: parseInt(faker.commerce.price(0, 5)),
-        ratingCount: parseInt(faker.commerce.price(0, 10000)),
+        description: faker.lorem.paragraph(),
+        price: parseFloat(faker.commerce.price({ min: 10, max: 10000 })),
+        rating: faker.number.int({ min: 0, max: 5 }),
+        ratingCount: faker.number.int({ min: 0, max: 10000 }),
         image: 'https://cdn.vuetifyjs.com/images/cards/plane.jpg'
-    })
+    });
 }
 
 module.exports = function () {
     return {
         products: products,
         orders: []
-    }
-}
+    };
+};

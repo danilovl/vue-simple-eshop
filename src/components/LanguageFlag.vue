@@ -1,7 +1,7 @@
 <template>
     <form class="d-flex">
         <select v-model="locale" class="form-select me-2">
-            <option v-for="option in localeStore.getLocalesSelect" :value="option.value">
+            <option v-for="option in localeStore.getLocalesSelect" :key="option.value" :value="option.value">
                 {{ option.text }}
             </option>
         </select>

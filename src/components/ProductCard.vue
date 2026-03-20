@@ -62,7 +62,7 @@ defineProps<Props>()
 const cartStore = useCartStore()
 const router = useRouter()
 
-const toRoute = (route: Object): void => {
+const toRoute = (route: object): void => {
     router.push(route)
 }
 </script>
