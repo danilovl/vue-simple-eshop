@@ -1,27 +1,58 @@
-import {reactive} from 'vue'
+import {computed, reactive} from 'vue'
 import {defineStore} from 'pinia'
-import type {AlertModel} from '@/model/alert-model'
+import Axios from 'axios'
+import transFilter from '@/filter/trans-filter'
+import {AlertModel} from '@/model/alert-model'
+import AlertConstant from '@/constant/alert-constant'
 import type {AlertState} from '@/store/type/alert'
 
-export const useAlertStore = defineStore('alert', ()  => {
+const ALERT_LIFETIME_MS = 3000
+
+let nextAlertId = 1
+
+export function errorMessage(error: unknown): string {
+    if (Axios.isAxiosError(error) && !error.response) {
+        return transFilter('alert.network_error')
+    }
+
+    if (error instanceof Error) {
+        return error.message
+    }
+
+    return String(error)
+}
+
+export const useAlertStore = defineStore('alert', () => {
     const state = reactive<AlertState>({
         alerts: []
-    }) as AlertState
+    })
 
-    const getAlertsOnce = (): AlertModel[] => {
-        setTimeout((): void => {
-            state.alerts = []
-        }, 3000)
+    const alerts = computed((): AlertState['alerts'] => state.alerts)
 
-        return state.alerts
+    const removeAlert = (id: number): void => {
+        state.alerts = state.alerts.filter(alert => alert.id !== id)
     }
 
     const addAlert = (alert: AlertModel): void => {
-        state.alerts.push(alert)
+        const id = nextAlertId++
+        state.alerts.push({id, type: alert.type, text: alert.text})
+
+        setTimeout((): void => removeAlert(id), ALERT_LIFETIME_MS)
+    }
+
+    const addError = (error: unknown): void => {
+        addAlert(new AlertModel(AlertConstant.ERROR, errorMessage(error)))
+    }
+
+    const addSuccess = (text: string): void => {
+        addAlert(new AlertModel(AlertConstant.SUCCESS, text))
     }
 
     return {
-        getAlertsOnce,
-        addAlert
+        alerts,
+        addAlert,
+        addError,
+        addSuccess,
+        removeAlert
     }
 })

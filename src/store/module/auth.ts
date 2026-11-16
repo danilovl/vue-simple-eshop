@@ -6,73 +6,101 @@ import type {AuthState} from '@/store/type/auth'
 import type {AuthModel} from '@/model/auth-model'
 import ApiConstant from '@/constant/api-constant'
 
-export const useAuthStore = defineStore('auth', ()  => {
+const TOKEN_STORAGE_KEY = 'user-token'
+
+const authHeader = (token: string): string => `Authentication<${token}>`
+
+export const useAuthStore = defineStore('auth', () => {
     const state = reactive<AuthState>({
-        verifyToken: false,
         authenticated: false,
         jwt: null
-    }) as AuthState
+    })
+
+    let initializePromise: Promise<void> | null = null
 
     const isAuthenticated = computed((): boolean => state.authenticated)
 
-    const authenticatedAxios = (): AxiosInstance => {
-        return Axios.create({
-            headers: {
-                Authorization: `Authentication<${state.jwt}>`
-            }
-        })
-    }
-
-    const setAuthenticated = (header: string): void => {
-        state.jwt = header
+    const setAuthenticated = (token: string): void => {
+        state.jwt = token
         state.authenticated = true
 
-        localStorage.setItem('user-token', state.jwt)
-    }
-
-    const setVerifyToken = (isVerify: boolean): void => {
-        state.verifyToken = isVerify
+        localStorage.setItem(TOKEN_STORAGE_KEY, token)
     }
 
     const logout = (): void => {
         state.authenticated = false
         state.jwt = null
 
-        localStorage.removeItem('user-token')
+        localStorage.removeItem(TOKEN_STORAGE_KEY)
     }
 
-    const verifyToken = async (token: string): Promise<any> => {
-        const response = await Axios.create({
-            headers: {
-                Authorization: `Authentication<${token}>`
+    const http: AxiosInstance = Axios.create()
+    http.interceptors.request.use(config => {
+        if (state.jwt) {
+            config.headers.set('Authorization', authHeader(state.jwt))
+        }
+
+        return config
+    })
+    http.interceptors.response.use(
+        response => response,
+        error => {
+            if (Axios.isAxiosError(error) && error.response?.status === 401) {
+                logout()
             }
-        }).post(ApiConstant.VERIFY_TOKEN_URL)
 
-        setVerifyToken(response.data.success === true)
+            return Promise.reject(error)
+        }
+    )
+
+    const authenticatedAxios = (): AxiosInstance => http
+
+    const verifyToken = async (token: string): Promise<boolean> => {
+        const response = await Axios.post(ApiConstant.VERIFY_TOKEN_URL, null, {
+            headers: {Authorization: authHeader(token)}
+        })
+
+        return response.data?.success === true
     }
 
-    const initializeAuthenticate = async (): Promise<any> => {
-        const token = localStorage.getItem('user-token')
+    const doInitialize = async (): Promise<void> => {
+        const token = localStorage.getItem(TOKEN_STORAGE_KEY)
         if (token === null) {
             logout()
 
             return
         }
 
-        await verifyToken(token).then((): void => {
-            if (state.verifyToken) {
+        try {
+            if (await verifyToken(token)) {
                 setAuthenticated(token)
             } else {
                 logout()
             }
-        })
+        } catch {
+            // Server unreachable: keep the token so the session survives until the API is back.
+            state.authenticated = false
+            state.jwt = null
+        }
     }
 
-    const authenticate = async (credentials: AuthModel): Promise<any> => {
-        const response = await Axios.post(ApiConstant.LOGIN_URL, credentials)
-        if (response.data.success === true) {
-            setAuthenticated(response.data.token)
+    const initializeAuthenticate = (): Promise<void> => {
+        if (initializePromise === null) {
+            initializePromise = doInitialize()
         }
+
+        return initializePromise
+    }
+
+    const authenticate = async (credentials: AuthModel): Promise<boolean> => {
+        const response = await Axios.post(ApiConstant.LOGIN_URL, credentials)
+        if (response.data?.success === true && typeof response.data.token === 'string') {
+            setAuthenticated(response.data.token)
+
+            return true
+        }
+
+        return false
     }
 
     return {

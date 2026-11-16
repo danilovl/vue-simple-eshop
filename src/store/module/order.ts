@@ -1,12 +1,10 @@
-import {reactive} from 'vue'
+import {computed, reactive} from 'vue'
 import {defineStore} from 'pinia'
 import Axios from 'axios'
-import type {AxiosResponse} from 'axios'
 import type {OrderModel} from '@/model/order-model'
 import type {OrderState} from '@/store/type/order'
-import {AlertModel} from '@/model/alert-model'
-import AlertConstant from '@/constant/alert-constant'
 import ApiConstant from '@/constant/api-constant'
+import transFilter from '@/filter/trans-filter'
 import {useAuthStore} from '@/store/module/auth'
 import {useLoaderStore} from '@/store/module/loader'
 import {useAlertStore} from '@/store/module/alert'
@@ -20,63 +18,61 @@ export const useOrderStore = defineStore('order', () => {
 
     const state = reactive<OrderState>({
         orders: []
-    }) as OrderState
+    })
 
-    function setOrders(data: any): void {
+    const orders = computed((): OrderModel[] => state.orders)
+
+    function setOrders(data: OrderModel[]): void {
         state.orders = data
     }
 
-    const changeOrderProcessed = (order: OrderModel): void => {
-        order.processed = order.processed === null || !order.processed
-    }
+    const getOrders = (): OrderModel[] => state.orders
 
-    const loadOrders = async (): Promise<any> => {
-        loaderStore.setLoading(true)
-
-        const data: any = await authStore.authenticatedAxios()
-            .get(ApiConstant.ORDERS_URL)
-            .then((response: AxiosResponse): AxiosResponse => {
-                loaderStore.setLoading(false)
-
-                return response.data
-            })
-
-        setOrders(data)
-    }
-    const getOrders = (): OrderModel[] => {
-        return state.orders
-    }
-
-    const updateOrder = async (order: OrderModel): Promise<any> => {
-        changeOrderProcessed(order)
-
-        await authStore.authenticatedAxios().put(`${ApiConstant.ORDERS_URL}/${order.id}`, order)
-    }
-
-    const storeOrder = async (order: OrderModel): Promise<any> => {
+    const loadOrders = async (): Promise<void> => {
         try {
-            loaderStore.setLoading(true)
+            const response = await loaderStore.withLoading(
+                () => authStore.authenticatedAxios().get<OrderModel[]>(ApiConstant.ORDERS_URL)
+            )
+            setOrders(Array.isArray(response.data) ? response.data : [])
+        } catch (error) {
+            alertStore.addError(error)
+        }
+    }
 
-            order.basket = cartStore.getLines()
+    const updateOrder = async (order: OrderModel): Promise<void> => {
+        const processed = !order.processed
 
-            const response = await Axios.post(ApiConstant.ORDERS_URL, order)
-                .then((response: AxiosResponse): AxiosResponse => {
-                    loaderStore.setLoading(false)
+        try {
+            await loaderStore.withLoading(
+                () => authStore.authenticatedAxios().put(`${ApiConstant.ORDERS_URL}/${order.id}`, {...order, processed})
+            )
+            order.processed = processed
+        } catch (error) {
+            alertStore.addError(error)
+        }
+    }
 
-                    return response
-                })
+    const storeOrder = async (order: OrderModel): Promise<number | null> => {
+        try {
+            order.basket = cartStore.getLinesSnapshot()
 
-            return response.data.id
-        } catch (error: any) {
-            alertStore.addAlert(new AlertModel(AlertConstant.ERROR, error.message))
+            const response = await loaderStore.withLoading(
+                () => Axios.post(ApiConstant.ORDERS_URL, order)
+            )
+
+            return response.data?.id ?? null
+        } catch {
+            alertStore.addError(transFilter('alert.order_failed'))
+
+            return null
         }
     }
 
     return {
+        orders,
         getOrders,
         loadOrders,
         updateOrder,
-        storeOrder,
-        changeOrderProcessed
+        storeOrder
     }
 })

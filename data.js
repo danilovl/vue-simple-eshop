@@ -12,7 +12,7 @@ for (let i = 1; i <= 50; i++) {
         price: parseFloat(faker.commerce.price({ min: 10, max: 10000 })),
         rating: faker.number.int({ min: 0, max: 5 }),
         ratingCount: faker.number.int({ min: 0, max: 10000 }),
-        image: 'https://cdn.vuetifyjs.com/images/cards/plane.jpg'
+        image: `https://picsum.photos/seed/simple-shop-${i}/640/480`
     });
 }
 

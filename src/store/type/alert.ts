@@ -1,5 +1,9 @@
-import type {AlertModel} from '@/model/alert-model'
+export type AlertItem = {
+    id: number;
+    type: string;
+    text: string;
+}
 
 export type AlertState = {
-    alerts: AlertModel[];
+    alerts: AlertItem[];
 }

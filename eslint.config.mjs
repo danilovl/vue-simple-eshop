@@ -22,18 +22,8 @@ export default [
       'vue/multi-word-component-names': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-require-imports': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['warn', {argsIgnorePattern: '^_', varsIgnorePattern: '^_'}],
       '@typescript-eslint/no-empty-object-type': 'off',
-    },
-  },
-
-  {
-    files: ['cypress/e2e/**.{cy,spec}.{js,ts,jsx,tsx}'],
-    plugins: {
-      cypress: (await import('eslint-plugin-cypress')).default,
-    },
-    rules: {
-      ...(await import('eslint-plugin-cypress')).default.configs.recommended.rules,
     },
   },
 ]

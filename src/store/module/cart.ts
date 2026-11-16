@@ -4,110 +4,87 @@ import type {ProductModel} from '@/model/product-model'
 import type {CartState} from '@/store/type/cart'
 import {BasketModel} from '@/model/basket-model'
 
-const LOCAL_STORAGE_NAME: string = 'cart'
+const LOCAL_STORAGE_NAME = 'cart'
 
-export const useCartStore = defineStore('cart', ()  => {
+export const useCartStore = defineStore('cart', () => {
     const state = reactive<CartState>({
         lines: []
-    }) as CartState
+    })
+
+    let initialized = false
+
+    const findLine = (product: ProductModel): BasketModel | undefined => {
+        return state.lines.find((line: BasketModel): boolean => line.product.id === product.id)
+    }
 
     const itemCount = computed((): number => {
-        return state.lines.reduce((total: any, line: any): number => total + line.quantity, 0)
+        return state.lines.reduce((total: number, line: BasketModel): number => total + line.quantity, 0)
     })
 
     const totalPrice = computed((): number => {
-        return state.lines.reduce((total: number, line: BasketModel): number => {
-            return total + (line.quantity * line.product.price)
-        }, 0)
+        return state.lines.reduce((total: number, line: BasketModel): number => total + line.getTotalPrice(), 0)
     })
 
-    const totalItemByProduct = (product: ProductModel): number => {
-        const cart = getCartLineByProduct(product)
+    const lines = computed((): BasketModel[] => state.lines)
 
-        return cart !== null ? cart.quantity : 0
+    const getCartLineByProduct = (product: ProductModel): BasketModel | null => {
+        const cartLine = findLine(product)
+
+        return cartLine !== undefined && cartLine.quantity > 0 ? cartLine : null
+    }
+
+    const totalItemByProduct = (product: ProductModel): number => {
+        return getCartLineByProduct(product)?.quantity ?? 0
     }
 
     const totalPriceByProduct = (product: ProductModel): number => {
-        const cart = getCartLineByProduct(product)
-
-        return cart !== null ? cart.getTotalPrice() : 0
+        return getCartLineByProduct(product)?.getTotalPrice() ?? 0
     }
 
     const isProductInCart = (product: ProductModel): boolean => {
-        const cartLine = state.lines.find((line: BasketModel): boolean => {
-            return line.product.id === product.id && line.quantity > 0
-        })
-
-        return cartLine !== undefined
+        return getCartLineByProduct(product) !== null
     }
 
-    const getCartLineByProduct = (product: ProductModel): BasketModel | null => {
-        const cartLine = state.lines.find((line: BasketModel): boolean => {
-            return line.product.id === product.id && line.quantity > 0
-        })
-
-        return cartLine !== undefined ? cartLine : null
+    const removeEmptyLines = (): void => {
+        state.lines = state.lines.filter((line: BasketModel): boolean => line.quantity > 0)
     }
 
     const addProduct = (product: ProductModel): void => {
-        const cartLine = state.lines.find((line: BasketModel): boolean => {
-            return line.product.id === product.id
-        })
+        const cartLine = findLine(product)
 
-        if (cartLine != null) {
+        if (cartLine !== undefined) {
             cartLine.quantity++
         } else {
-            const cartLine = reactive<BasketModel>(new BasketModel(product, 1))
-            state.lines.push(cartLine)
+            state.lines.push(new BasketModel(product, 1))
         }
     }
 
     const changeQuantity = (line: BasketModel, quantity: number): void => {
-        line.quantity = quantity
+        const normalized = Math.floor(Number(quantity))
+        line.quantity = Number.isFinite(normalized) && normalized > 0 ? normalized : 1
     }
 
     const removeProduct = (product: ProductModel): void => {
-        const cartLine = state.lines.find((line: BasketModel): boolean => {
-            return line.product.id === product.id
-        })
-
+        const cartLine = findLine(product)
         if (!cartLine) {
             return
         }
 
         if (cartLine.quantity > 0) {
             cartLine.quantity--
-            removeEmptyLine()
-        }
-    }
-
-    const getLines = (): BasketModel[] => {
-        return state.lines
-    }
-
-    const removeLine = (lineToRemove: any): void => {
-        const index = state.lines.findIndex((line: BasketModel): boolean => line === lineToRemove)
-
-        if (index > -1) {
-            state.lines.splice(index, 1)
-        }
-    }
-
-    const removeEmptyLine = (): void => {
-        let indexToRemove: number | null = null
-
-        state.lines.forEach((line: BasketModel, index: number): void => {
-            if (line.quantity === 0) {
-                indexToRemove = index
-            }
-        })
-
-        if (indexToRemove === null) {
-            return
         }
 
-        state.lines.splice(indexToRemove, 1)
-        removeEmptyLine()
+        removeEmptyLines()
+    }
+
+    const getLines = (): BasketModel[] => state.lines
+
+    const getLinesSnapshot = (): BasketModel[] => {
+        return state.lines.map((line: BasketModel): BasketModel => new BasketModel({...line.product}, line.quantity))
+    }
+
+    const removeLine = (lineToRemove: BasketModel): void => {
+        state.lines = state.lines.filter((line: BasketModel): boolean => line !== lineToRemove)
     }
 
     const setCartData = (data: BasketModel[]): void => {
@@ -120,14 +97,20 @@ export const useCartStore = defineStore('cart', ()  => {
             return
         }
 
-        const basket = JSON.parse(data).map((data: any): BasketModel => {
-            return new BasketModel(
-                data.product,
-                data.quantity
-            )
-        })
+        try {
+            const parsed: unknown = JSON.parse(data)
+            if (!Array.isArray(parsed)) {
+                return
+            }
 
-        setCartData(basket)
+            const basket = parsed
+                .filter((item: any): boolean => item?.product?.id != null && Number(item.quantity) > 0)
+                .map((item: any): BasketModel => new BasketModel(item.product, Math.floor(Number(item.quantity))))
+
+            setCartData(basket)
+        } catch {
+            localStorage.removeItem(LOCAL_STORAGE_NAME)
+        }
     }
 
     const storeCartData = (): void => {
@@ -139,6 +122,11 @@ export const useCartStore = defineStore('cart', ()  => {
     }
 
     const initializeCart = (): void => {
+        if (initialized) {
+            return
+        }
+        initialized = true
+
         loadCartData()
 
         watch(
@@ -149,12 +137,14 @@ export const useCartStore = defineStore('cart', ()  => {
     }
 
     return {
+        lines,
         itemCount,
         totalPrice,
         totalItemByProduct,
         totalPriceByProduct,
         isProductInCart,
         getLines,
+        getLinesSnapshot,
         addProduct,
         changeQuantity,
         removeProduct,

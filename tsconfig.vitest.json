@@ -20,7 +20,6 @@
     "useDefineForClassFields": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "libReplacement": false,
     "skipLibCheck": true
   },
   "exclude": []

@@ -1,14 +1,11 @@
 import type {RouteRecordRaw} from 'vue-router'
 import {createRouter, createWebHashHistory} from 'vue-router'
+import {useAuthStore} from '@/store/module/auth'
 
-const routes: Array<RouteRecordRaw> = [
+const routes: RouteRecordRaw[] = [
     {
-        path: '',
-        meta: {
-            display: true,
-            title: 'Main Menu'
-        },
-        component: (): Promise<any> => import('@/layout/Main.vue'),
+        path: '/',
+        component: () => import('@/layout/Main.vue'),
         children: [
             {
                 path: '',
@@ -17,20 +14,20 @@ const routes: Array<RouteRecordRaw> = [
                     display: true,
                     title: 'Home Page - Example App'
                 },
-                component: (): Promise<any> => import('@/pages/Home.vue')
+                component: () => import('@/pages/Home.vue')
             },
             {
                 path: 'products',
-                component: (): Promise<any> => import('@/layout/Default.vue'),
+                component: () => import('@/layout/Default.vue'),
                 children: [
                     {
-                        path: '/',
+                        path: '',
                         name: 'product_list',
                         meta: {
                             display: true,
                             title: 'Product list'
                         },
-                        component: (): Promise<any> => import('@/pages/Home.vue')
+                        component: () => import('@/pages/Home.vue')
                     },
                     {
                         path: 'detail/:id(\\d+)',
@@ -39,63 +36,62 @@ const routes: Array<RouteRecordRaw> = [
                             display: true,
                             title: 'Product detail'
                         },
-                        component: (): Promise<any> => import('@/pages/product/ProductDetail.vue')
+                        component: () => import('@/pages/product/ProductDetail.vue')
                     }
                 ]
             },
             {
-                path: '/cart',
+                path: 'cart',
                 name: 'cart',
                 meta: {
                     display: true,
-                    title: 'Shopping cart '
+                    title: 'Shopping cart'
                 },
-                component: (): Promise<any> => import('@/pages/cart/ShoppingCart.vue')
+                component: () => import('@/pages/cart/ShoppingCart.vue')
             },
             {
-                path: '/favorite',
+                path: 'favorite',
                 name: 'favorite',
                 meta: {
                     display: true,
-                    title: 'Favorite cart '
+                    title: 'Favorite cart'
                 },
-                component: (): Promise<any> => import('@/pages/favorite/FavoriteCart.vue')
+                component: () => import('@/pages/favorite/FavoriteCart.vue')
             },
             {
-                path: '/order',
+                path: 'order',
                 name: 'order',
                 meta: {
                     display: true,
-                    title: 'Checkout cart '
+                    title: 'Checkout cart'
                 },
-                component: (): Promise<any> => import('@/pages/order/Order.vue')
+                component: () => import('@/pages/order/Order.vue')
             },
             {
-                path: '/order-thanks',
+                path: 'order-thanks',
                 name: 'order_thanks',
                 meta: {
                     display: true,
                     title: 'Order thanks'
                 },
-                component: (): Promise<any> => import('@/pages/order/OrderThanks.vue')
+                component: () => import('@/pages/order/OrderThanks.vue')
             },
             {
-                path: '/login',
+                path: 'login',
                 name: 'login',
-                component: (): Promise<any> => import('@/pages/admin/Authentication.vue')
+                meta: {
+                    title: 'Login'
+                },
+                component: () => import('@/pages/admin/Authentication.vue')
             },
             {
-                path: '/admin',
+                path: 'admin',
                 name: 'admin',
-                component: (): Promise<any> => import('@/pages/admin/Admin.vue'),
-                beforeEnter(to, from, next) {
-                    const loggedIn = localStorage.getItem('user-token')
-                    if (loggedIn) {
-                        next()
-                    } else {
-                        next('/login')
-                    }
+                redirect: {name: 'admin_product_list'},
+                meta: {
+                    requiresAuth: true
                 },
+                component: () => import('@/pages/admin/Admin.vue'),
                 children: [
                     {
                         path: 'products/:op(create|edit)/:id(\\d+)?',
@@ -104,7 +100,7 @@ const routes: Array<RouteRecordRaw> = [
                             display: true,
                             title: 'Admin create/edit'
                         },
-                        component: (): Promise<any> => import('@/pages/admin/ProductEditor.vue')
+                        component: () => import('@/pages/admin/ProductEditor.vue')
                     },
                     {
                         path: 'products',
@@ -113,7 +109,7 @@ const routes: Array<RouteRecordRaw> = [
                             display: true,
                             title: 'Admin product list'
                         },
-                        component: (): Promise<any> => import('@/pages/admin/ProductAdmin.vue')
+                        component: () => import('@/pages/admin/ProductAdmin.vue')
                     },
                     {
                         path: 'orders',
@@ -122,72 +118,76 @@ const routes: Array<RouteRecordRaw> = [
                             display: true,
                             title: 'Admin order list'
                         },
-                        component: (): Promise<any> => import('@/pages/admin/OrderAdmin.vue')
+                        component: () => import('@/pages/admin/OrderAdmin.vue')
                     }
                 ]
-            }
-        ]
-    },
-    {
-        path: '',
-        meta: {
-            display: false
-        },
-        component: (): Promise<any> => import('@/layout/Main.vue'),
-        children: [
+            },
             {
-                path: '/error',
+                path: 'error',
                 name: 'error',
                 meta: {
                     display: false,
                     title: 'Error Page'
                 },
-                component: (): Promise<any> => import('@/pages/Error404.vue')
+                component: () => import('@/pages/Error404.vue')
             }
         ]
     },
     {
         path: '/:pathMatch(.*)*',
-        redirect: '/error'
+        redirect: {name: 'error'}
     }
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(),
-  routes
+    history: createWebHashHistory(),
+    routes,
+    scrollBehavior(to, from, savedPosition) {
+        if (savedPosition) {
+            return savedPosition
+        }
+
+        if (to.name === from.name && to.path === from.path) {
+            return false
+        }
+
+        return {top: 0}
+    }
 })
 
-router.beforeEach((to, from, next) => {
-  const nearestWithTitle = to.matched.slice().reverse().find(r => r.meta && r.meta.title)
-  const nearestWithMeta = to.matched.slice().reverse().find(r => r.meta && r.meta.metaTags)
+router.beforeEach(async (to) => {
+    if (!to.matched.some(record => record.meta.requiresAuth)) {
+        return true
+    }
 
-  if (nearestWithTitle) {
-    document.title = nearestWithTitle.meta.title
-  }
+    const authStore = useAuthStore()
+    await authStore.initializeAuthenticate()
 
-  Array.from(document.querySelectorAll('[data-vue-router-controlled]')).map(el => {
-    return el.parentNode === null ? null : el.parentNode.removeChild(el)
-  })
+    if (!authStore.isAuthenticated) {
+        return {name: 'login', query: {redirect: to.fullPath}}
+    }
 
-  if (!nearestWithMeta) {
-    return next()
-  }
+    return true
+})
 
-  nearestWithMeta.meta.metaTags
-      .map((tagDef: any): Element => {
+router.afterEach((to) => {
+    const nearestWithTitle = to.matched.slice().reverse().find(record => record.meta.title)
+    const nearestWithMeta = to.matched.slice().reverse().find(record => record.meta.metaTags)
+
+    if (nearestWithTitle?.meta.title) {
+        document.title = nearestWithTitle.meta.title
+    }
+
+    document.querySelectorAll('[data-vue-router-controlled]').forEach(el => el.remove())
+
+    nearestWithMeta?.meta.metaTags?.forEach((tagDef: Record<string, string>): void => {
         const tag = document.createElement('meta')
 
-        Object.keys(tagDef).forEach(key => {
-          tag.setAttribute(key, tagDef[key])
-        })
-
+        Object.entries(tagDef).forEach(([key, value]) => tag.setAttribute(key, value))
         tag.setAttribute('data-vue-router-controlled', '')
 
-        return tag
-      })
-      .forEach((tag: Element): Element => document.head.appendChild(tag))
-
-  next()
+        document.head.appendChild(tag)
+    })
 })
 
 export default router

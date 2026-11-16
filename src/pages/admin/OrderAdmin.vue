@@ -1,43 +1,83 @@
 <template>
-    <div>
-        <button
-            class="btn"
-            :class="showProcessed ? 'btn-warning' : 'btn-primary'"
-            v-on:click="showProcessed = !showProcessed"
-        >
-            {{ $filters.transFilter(showProcessed ? 'btn.show_processed' : 'btn.show_not_processed') }}
-        </button>
+    <div class="surface">
+        <div class="admin-toolbar">
+            <h2 class="admin-toolbar-title">{{ $filters.transFilter('btn.orders') }}</h2>
+            <div class="segmented" role="tablist">
+                <button
+                    type="button"
+                    role="tab"
+                    :aria-selected="!showProcessed"
+                    :class="{active: !showProcessed}"
+                    @click="showProcessed = false"
+                >
+                    {{ $filters.transFilter('text.status_new') }}
+                    <span class="segmented-count">{{ newCount }}</span>
+                </button>
+                <button
+                    type="button"
+                    role="tab"
+                    :aria-selected="showProcessed"
+                    :class="{active: showProcessed}"
+                    @click="showProcessed = true"
+                >
+                    {{ $filters.transFilter('text.status_processed') }}
+                    <span class="segmented-count">{{ orderStore.orders.length - newCount }}</span>
+                </button>
+            </div>
+        </div>
 
-        <table class="table">
-            <thead>
-            <tr>
-                <th class="text-left">{{ $filters.transFilter('text.id') }}</th>
-                <th class="text-left">{{ $filters.transFilter('text.name') }}</th>
-                <th class="text-left">{{ $filters.transFilter('text.city') }}</th>
-                <th class="text-left">{{ $filters.transFilter('text.address') }}</th>
-                <th class="text-left">{{ $filters.transFilter('text.total') }}</th>
-                <th class="text-left">{{ $filters.transFilter('text.action') }}</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr v-for="order in displayOrders" :key="order.id">
-                <td>{{ order.id }}</td>
-                <td>{{ order.email }}</td>
-                <td>{{ order.city }}</td>
-                <td>{{ order.address }}</td>
-                <td>{{ $filters.currencyFilter(getTotal(order)) }}</td>
-                <td>
-                    <button
-                        class="btn"
-                        :class="showProcessed ? 'btn-warning' : 'btn-primary'"
-                        v-on:click="processOrder(order)"
-                    >
-                        {{ $filters.transFilter(order.processed ? 'btn.not_processed' : 'btn.processed') }}
-                    </button>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+        <div v-if="displayOrders.length > 0" class="table-responsive">
+            <table class="table table-hover table-modern">
+                <thead>
+                <tr>
+                    <th>{{ $filters.transFilter('text.id') }}</th>
+                    <th>{{ $filters.transFilter('text.customer') }}</th>
+                    <th class="d-none d-md-table-cell">{{ $filters.transFilter('text.address') }}</th>
+                    <th>{{ $filters.transFilter('text.status') }}</th>
+                    <th class="text-end">{{ $filters.transFilter('text.total') }}</th>
+                    <th class="text-end">{{ $filters.transFilter('text.action') }}</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="order in displayOrders" :key="order.id">
+                    <td class="fw-bold">#{{ order.id }}</td>
+                    <td>
+                        <div class="d-flex flex-column">
+                            <span class="fw-semibold">{{ order.name }}</span>
+                            <a :href="`mailto:${order.email}`" class="small">{{ order.email }}</a>
+                        </div>
+                    </td>
+                    <td class="d-none d-md-table-cell">
+                        <div class="d-flex flex-column">
+                            <span>{{ order.city }}</span>
+                            <span class="small text-secondary">{{ order.address }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge" :class="order.processed ? 'is-done' : 'is-new'">
+                            {{ $filters.transFilter(order.processed ? 'text.status_processed' : 'text.status_new') }}
+                        </span>
+                    </td>
+                    <td class="text-end fw-bold text-nowrap">{{ $filters.currencyFilter(getTotal(order)) }}</td>
+                    <td class="text-end">
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-pill text-nowrap"
+                            :class="order.processed ? 'btn-ghost' : 'btn-soft'"
+                            @click="orderStore.updateOrder(order)"
+                        >
+                            <font-awesome-icon :icon="order.processed ? 'fa-solid fa-rotate-left' : 'fa-solid fa-check'"/>
+                            {{ $filters.transFilter(order.processed ? 'btn.mark_new' : 'btn.mark_processed') }}
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <Empty v-else icon="fa-solid fa-receipt" title="text.no_orders" text="text.dashboard_hint">
+            <span></span>
+        </Empty>
     </div>
 </template>
 
@@ -45,6 +85,7 @@
 import {computed, ref} from 'vue'
 import type {BasketModel} from '@/model/basket-model'
 import type {OrderModel} from '@/model/order-model'
+import Empty from '@/components/Empty.vue'
 import {useOrderStore} from '@/store/module/order'
 
 const orderStore = useOrderStore()
@@ -52,20 +93,37 @@ await orderStore.loadOrders()
 
 const showProcessed = ref<boolean>(false)
 
+const newCount = computed((): number => orderStore.orders.filter(order => !order.processed).length)
+
 const displayOrders = computed((): OrderModel[] => {
-    return orderStore.getOrders().filter((order: OrderModel): boolean => order.processed !== showProcessed.value)
+    return orderStore.orders.filter((order: OrderModel): boolean => Boolean(order.processed) === showProcessed.value)
 })
 
 const getTotal = (order: OrderModel): number => {
-    if (order.basket.length === 0) {
+    if (!Array.isArray(order.basket)) {
         return 0
     }
 
     return order.basket.reduce((total: number, line: BasketModel): number => {
-        return total + (line.quantity * line.product.price)
+        return total + (Number(line.quantity) * Number(line.product?.price ?? 0))
     }, 0)
 }
-const processOrder = (order: OrderModel): void => {
-    orderStore.updateOrder(order)
-}
 </script>
+
+<style scoped>
+.admin-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--app-border);
+}
+
+.admin-toolbar-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 800;
+}
+</style>

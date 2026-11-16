@@ -1,26 +1,21 @@
 <template>
-    <font-awesome-icon
+    <router-link
         v-if="authStore.isAuthenticated"
-        icon="fa-solid fa-screwdriver-wrench"
-        class="cursor-pointer"
-        @click="toRoute(to)"
-    />
+        :to="to"
+        class="btn btn-sm btn-ghost btn-pill"
+    >
+        <font-awesome-icon icon="fa-solid fa-pen"/>
+        {{ $filters.transFilter('btn.edit') }}
+    </router-link>
 </template>
 
 <script setup lang="ts">
-import {useRouter} from 'vue-router'
+import type {RouteLocationRaw} from 'vue-router'
 import {useAuthStore} from '@/store/module/auth'
 
-interface Props {
-    to: object
-}
-
-defineProps<Props>()
+defineProps<{
+    to: RouteLocationRaw
+}>()
 
 const authStore = useAuthStore()
-const router = useRouter()
-
-const toRoute = (route: object): void => {
-    router.push(route)
-}
 </script>

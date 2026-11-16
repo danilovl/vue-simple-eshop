@@ -2,7 +2,9 @@
 
 A simple demo e-shop built with **Vue 3**, **Pinia**, and **TypeScript**. The project includes a product showcase, shopping cart, favorites list, checkout, and an admin panel for content management.
 
-![Alt text](/git/demo.gif?raw=true "E-shop demo")
+[![Main page](git/main-page.png "Main page")](git/origin/main-page.png)
+
+Click the image to open the [full-size screenshot](git/origin/main-page.png).
 
 ## ✨ Key Features
 
@@ -21,11 +23,12 @@ A simple demo e-shop built with **Vue 3**, **Pinia**, and **TypeScript**. The pr
 ### Admin Panel
 *   **Product Management**: Create, edit, and delete products from the catalog.
 *   **Order Management**: View the list of all incoming orders.
-*   **Authorization**: Secure login to the admin panel using JWT (simulated via localStorage).
+*   **Authorization**: Login to the admin panel using JWT (token lifetime 1 hour, verified on the server).
 
 ### Miscellaneous
 *   **Localization (I18n)**: Support for Russian and English languages (RU/EN).
 *   **Responsiveness**: Bootstrap 5-based interface displays correctly on various devices.
+*   **Light / Dark Theme**: Switch in the header; the choice is remembered, the system theme is used by default.
 
 ---
 
@@ -36,7 +39,7 @@ A simple demo e-shop built with **Vue 3**, **Pinia**, and **TypeScript**. The pr
 *   **Language**: [TypeScript](https://www.typescriptlang.org/)
 *   **Build Tool**: [Vite](https://vitejs.dev/)
 *   **Styling**: [Bootstrap 5](https://getbootstrap.com/), [SCSS](https://sass-lang.com/), [Font Awesome 6](https://fontawesome.com/)
-*   **Validation**: [Vuelidate](https://vuelidate-js.netlify.app/), [Vee-validate](https://vee-validate.logaretm.com/v4/)
+*   **Validation**: [Vuelidate](https://vuelidate-js.netlify.app/)
 *   **HTTP Client**: [Axios](https://axios-http.com/)
 *   **Backend Simulation**: [json-server](https://github.com/typicode/json-server) + JWT Auth Middleware
 
@@ -71,7 +74,15 @@ If you have Docker and Docker Compose installed:
 docker-compose up --build
 ```
 
-After startup, the application will be available at `http://localhost:5174`.
+After startup, the application will be available at `http://localhost:5174` and the API at `http://localhost:3500`.
+
+### API URL
+
+By default the frontend uses the current host on port `3500`. To use another API, create `.env.local`:
+
+```bash
+VITE_API_URL=http://my-api-host:3500
+```
 
 ---
 
@@ -83,28 +94,24 @@ After startup, the application will be available at `http://localhost:5174`.
 *   `npm run type-check` — runs the TypeScript type checker.
 *   `npm run lint` — checks and fixes code formatting issues via ESLint.
 *   `npm run test:unit` — runs unit tests via Vitest.
-*   `npm run test:e2e` — runs end-to-end tests via Cypress.
 
 ---
 
 ## 🧪 Testing
 
-The project contains unit and end-to-end tests to ensure correct behavior:
+Unit tests (Vitest + jsdom) cover the stores: cart, favorites, locale, alerts and loader.
 
-*   **Unit tests** (Vitest): Test component logic and stores.
-    ```bash
-    npm run test:unit
-    ```
-*   **E2E tests** (Cypress): Test main user scenarios (adding to cart, checkout).
-    ```bash
-    npm run test:e2e
-    ```
+```bash
+npm run test:unit
+```
 
 ---
 
 ## 🔒 Admin Credentials
 
-To access the admin panel, you can use any data (simulated authorization) or check `authMiddleware.js` for the validation logic.
+Default credentials: `admin` / `admin`. They (and the JWT secret) can be overridden with the `ADMIN_USERNAME`, `ADMIN_PASSWORD` and `APP_SECRET` environment variables of `npm run json`.
+
+Without a token, the API allows only reading products and placing orders; managing products and viewing or changing orders requires the admin token.
 
 ---
 

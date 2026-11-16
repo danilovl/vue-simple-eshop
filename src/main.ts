@@ -12,9 +12,10 @@ import 'vue-awesome-paginate/dist/style.css'
 const app = createApp(App)
 addFilters(app)
 
-app.use(router)
-  .use(createPinia())
-  .use(fontAwesomePlugin)
-  .use(VueAwesomePaginate)
-  .use(consolePlugin)
-  .mount('#app')
+// Pinia is installed before the router: the navigation guards use stores.
+app.use(createPinia())
+    .use(router)
+    .use(fontAwesomePlugin)
+    .use(VueAwesomePaginate)
+    .use(consolePlugin)
+    .mount('#app')

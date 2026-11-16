@@ -1,55 +1,76 @@
 const jwt = require('jsonwebtoken')
 
-const APP_SECRET = 'myappsecret'
-const USERNAME = 'admin'
-const PASSWORD = 'admin'
+const APP_SECRET = process.env.APP_SECRET || 'myappsecret'
+const USERNAME = process.env.ADMIN_USERNAME || 'admin'
+const PASSWORD = process.env.ADMIN_PASSWORD || 'admin'
+const TOKEN_TTL = '1h'
+const RESPONSE_DELAY_MS = 500
+
+function extractToken(req) {
+    const header = req.headers.authorization
+    if (typeof header !== 'string' || !header.startsWith('Authentication<') || !header.endsWith('>')) {
+        return null
+    }
+
+    return header.substring('Authentication<'.length, header.length - 1)
+}
+
+function isTokenValid(req) {
+    const token = extractToken(req)
+    if (!token) {
+        return false
+    }
+
+    try {
+        jwt.verify(token, APP_SECRET)
+
+        return true
+    } catch {
+        return false
+    }
+}
+
+function unauthorized(res) {
+    res.statusCode = 401
+    res.end()
+}
+
+function requiresAuth(req) {
+    const path = req.path || req.url.split('?')[0]
+
+    if (path.startsWith('/products')) {
+        return req.method !== 'GET'
+    }
+
+    if (path.startsWith('/orders')) {
+        return !(req.method === 'POST' && (path === '/orders' || path === '/orders/'))
+    }
+
+    return false
+}
 
 module.exports = async function (req, res, next) {
-    await (new Promise(resolve => setTimeout(resolve, 500)))
+    await (new Promise(resolve => setTimeout(resolve, RESPONSE_DELAY_MS)))
 
     if (req.url.startsWith('/verify-token') && req.method === 'POST') {
-        let token = req.headers.authorization
-        if (token != null && token.startsWith('Authentication<')) {
-            token = token.substring(15, token.length - 1)
-            try {
-                jwt.verify(token, APP_SECRET)
-                res.json({success: true})
-
-                return
-            } catch (err) {
-            }
-        }
-        res.json({success: false})
+        res.json({success: isTokenValid(req)})
 
         return
     }
 
     if ((req.url === '/api/login' || req.url === '/login') && req.method === 'POST') {
         if (req.body != null && req.body.username === USERNAME && req.body.password === PASSWORD) {
-            const token = jwt.sign({data: USERNAME, expiresIn: '1h'}, APP_SECRET)
+            const token = jwt.sign({data: USERNAME}, APP_SECRET, {expiresIn: TOKEN_TTL})
             res.json({success: true, token: token})
         } else {
             res.json({success: false})
         }
-        res.end()
 
         return
     }
 
-    if (req.url.startsWith('/products') && req.method !== 'GET') {
-        let token = req.headers.authorization
-        if (token != null && token.startsWith('Authentication<')) {
-            token = token.substring(15, token.length - 1)
-            try {
-                jwt.verify(token, APP_SECRET)
-                next()
-
-                return
-            } catch (err) {
-            }
-        }
-        res.statusCode = 401
-        res.end()
+    if (requiresAuth(req) && !isTokenValid(req)) {
+        unauthorized(res)
 
         return
     }

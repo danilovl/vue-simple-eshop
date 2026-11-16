@@ -1,12 +1,8 @@
-import {reactive} from 'vue'
+import {computed, reactive} from 'vue'
 import {defineStore} from 'pinia'
 import Axios from 'axios'
-import type {AxiosResponse} from 'axios'
 import {ProductModel} from '@/model/product-model'
 import type {ProductsState} from '@/store/type/products'
-import {AlertModel} from '@/model/alert-model'
-import AlertConstant from '@/constant/alert-constant'
-import {PageModel} from '@/model/page-model'
 import ApiConstant from '@/constant/api-constant'
 import transFilter from '@/filter/trans-filter'
 import {useLoaderStore} from '@/store/module/loader'
@@ -20,202 +16,183 @@ export const useProductsStore = defineStore('products', () => {
 
     const state = reactive<ProductsState>({
         currentPage: 1,
-        pageSize: 6,
+        pageSize: 12,
         totalVisible: 8,
-        pages: [],
+        pages: {},
         serverPageCount: 0,
-        showSearch: false,
         searchTerm: '',
         totalCount: 0
-    }) as ProductsState
+    })
 
-    const getState = (): ProductsState => {
-        return state
+    // Only the response to the latest request is applied, so stale responses cannot overwrite newer ones.
+    let requestId = 0
+
+    const getState = (): ProductsState => state
+
+    const getCurrentPage = (): number => state.currentPage
+
+    const pageCount = (): number => state.serverPageCount
+
+    const getSearchTerm = (): string => state.searchTerm
+
+    const currentPageProducts = computed((): ProductModel[] => state.pages[state.currentPage] ?? [])
+
+    const processedCurrentPageProducts = (): ProductModel[] => currentPageProducts.value
+
+    const isProducts = (): boolean => currentPageProducts.value.length > 0
+
+    function setTotalCount(count: number): void {
+        state.totalCount = Number.isFinite(count) ? count : 0
+        state.serverPageCount = Math.ceil(state.totalCount / state.pageSize)
     }
 
-    const getCurrentPage = (): number => {
-        return state.currentPage
+    function clearPages(): void {
+        state.pages = {}
     }
 
-    const pageCount = (): number => {
-        return state.serverPageCount
-    }
-
-    const getSearchTerm = (): string => {
-        return state.searchTerm
-    }
-
-    const processedCurrentPageProducts = (): ProductModel[] => {
-        return state.pages[state.currentPage]
-    }
-
-    const isProducts = (): boolean => {
-        return state.pages[state.currentPage] && state.pages[state.currentPage].length > 0
-    }
-
-    function setPageCount(count: number): void {
-        state.serverPageCount = Math.ceil(Number(count) / state.pageSize)
-    }
-
-    function addPage(page: PageModel) {
-        for (let i = 0; i < page.pageCount; i++) {
-            state.pages[page.currentPage + i] = page.data.slice(i * state.pageSize, (i * state.pageSize) + state.pageSize)
-        }
-    }
-
-    async function getPage(getPageCount = 1): Promise<any> {
-        let url = `${ApiConstant.PRODUCTS_URL}?_page=${state.currentPage}` +
-            `&_limit=${state.pageSize * getPageCount}`
+    function buildPageUrl(page: number): string {
+        const params = new URLSearchParams({
+            _page: String(page),
+            _limit: String(state.pageSize)
+        })
 
         if (state.searchTerm !== '') {
-            url += `&q=${state.searchTerm}`
+            params.set('q', state.searchTerm)
         }
 
-        loaderStore.setLoading(true)
+        return `${ApiConstant.PRODUCTS_URL}?${params.toString()}`
+    }
 
-        const response = await Axios.get(url)
-            .then((response: AxiosResponse): AxiosResponse => {
-                loaderStore.setLoading(false)
+    async function fetchPage(page: number): Promise<void> {
+        const currentRequest = ++requestId
 
-                return response
-            })
+        try {
+            const response = await loaderStore.withLoading(() => Axios.get(buildPageUrl(page)))
+            if (currentRequest !== requestId) {
+                return
+            }
 
-        state.totalCount = Number(response.headers['x-total-count'])
-        setPageCount(state.totalCount)
-
-        const page = new PageModel(state.currentPage, getPageCount, response.data)
-        addPage(page)
+            const data: unknown[] = Array.isArray(response.data) ? response.data : []
+            setTotalCount(Number(response.headers['x-total-count'] ?? data.length))
+            state.pages[page] = data.map(item => ProductModel.fromApi(item))
+        } catch (error) {
+            if (currentRequest === requestId) {
+                alertStore.addError(error)
+            }
+        }
     }
 
     const setCurrentPage = (page: number): void => {
         state.currentPage = page
 
         if (!state.pages[page]) {
-            getPage()
+            void fetchPage(page)
         }
     }
 
-    const getData = async (): Promise<any> => {
-        await getPage(1)
+    const getData = async (): Promise<void> => {
+        await fetchPage(state.currentPage)
     }
 
-    function clearPages(): void {
-        state.pages = []
-    }
-
-    const addProduct = async (product: ProductModel): Promise<any> => {
-        try {
-            loaderStore.setLoading(true)
-
-            await authStore.authenticatedAxios()
-                .post(ApiConstant.PRODUCTS_URL, product)
-                .then((response: AxiosResponse): AxiosResponse => {
-                    loaderStore.setLoading(false)
-
-                    return response.data
-                })
-
-            const alert = new AlertModel(AlertConstant.SUCCESS, transFilter('alert.product_has_been_added'))
-            alertStore.addAlert(alert)
-
-            if (state.pages[state.currentPage]) {
-                state.pages[state.currentPage].unshift(product)
-            }
-        } catch (error: any) {
-            const alert = new AlertModel(AlertConstant.ERROR, error.message)
-            alertStore.addAlert(alert)
-
-            loaderStore.setLoading(false)
-        }
-    }
-
-    const removeProduct = async (product: ProductModel): Promise<any> => {
-        loaderStore.setLoading(true)
-
-        try {
-            await authStore.authenticatedAxios()
-                .delete(`${ApiConstant.PRODUCTS_URL}/${product.id}`)
-                .then((): void => {
-                    loaderStore.setLoading(false)
-                })
-
-            const alert = new AlertModel(AlertConstant.SUCCESS, transFilter('alert.product_has_been_removed'))
-            alertStore.addAlert(alert)
-        } catch (error: any) {
-            const alert = new AlertModel(AlertConstant.ERROR, error.message)
-            alertStore.addAlert(alert)
-
-            loaderStore.setLoading(false)
-        }
-
+    const reloadCurrentPage = async (): Promise<void> => {
         clearPages()
-        await getPage(1)
+        await fetchPage(state.currentPage)
+
+        if (state.currentPage > 1 && state.currentPage > state.serverPageCount) {
+            state.currentPage = Math.max(1, state.serverPageCount)
+            await fetchPage(state.currentPage)
+        }
+    }
+
+    const addProduct = async (product: ProductModel): Promise<boolean> => {
+        try {
+            const {id: _id, ...payload} = product
+            await loaderStore.withLoading(
+                () => authStore.authenticatedAxios().post(ApiConstant.PRODUCTS_URL, payload)
+            )
+
+            alertStore.addSuccess(transFilter('alert.product_has_been_added'))
+        } catch (error) {
+            alertStore.addError(error)
+
+            return false
+        }
+
+        await reloadCurrentPage()
+
+        return true
+    }
+
+    const removeProduct = async (product: ProductModel): Promise<boolean> => {
+        try {
+            await loaderStore.withLoading(
+                () => authStore.authenticatedAxios().delete(`${ApiConstant.PRODUCTS_URL}/${product.id}`)
+            )
+
+            alertStore.addSuccess(transFilter('alert.product_has_been_removed'))
+        } catch (error) {
+            alertStore.addError(error)
+
+            return false
+        }
+
+        await reloadCurrentPage()
+
+        return true
     }
 
     function updateProductState(product: ProductModel): void {
-        Object.keys(state.pages).forEach((pageIndex: any): void => {
-            const objects = state.pages[pageIndex]
-
-            objects.forEach((key: any): void => {
-                const p = objects[pageIndex]
-                if (p && p.id === product.id) {
-                    objects[key] = product
-                }
-            })
+        Object.values(state.pages).forEach((products: ProductModel[]): void => {
+            const index = products.findIndex((item: ProductModel): boolean => item.id === product.id)
+            if (index > -1) {
+                products[index] = product
+            }
         })
     }
 
-    const updateProduct = async (product: ProductModel): Promise<any> => {
+    const updateProduct = async (product: ProductModel): Promise<boolean> => {
         try {
-            loaderStore.setLoading(true)
+            const response = await loaderStore.withLoading(
+                () => authStore.authenticatedAxios().put(`${ApiConstant.PRODUCTS_URL}/${product.id}`, product)
+            )
 
-            await authStore.authenticatedAxios()
-                .put(`${ApiConstant.PRODUCTS_URL}/${product.id}`, product)
-                .then((): void => {
-                    loaderStore.setLoading(false)
-                })
+            updateProductState(ProductModel.fromApi(response.data ?? product))
+            alertStore.addSuccess(transFilter('alert.product_has_been_updated'))
 
-            const alert = new AlertModel(AlertConstant.SUCCESS, transFilter('alert.product_has_been_updated'))
-            alertStore.addAlert(alert)
-        } catch (error: any) {
-            const alert = new AlertModel(AlertConstant.ERROR, error.message)
-            alertStore.addAlert(alert)
+            return true
+        } catch (error) {
+            alertStore.addError(error)
 
-            loaderStore.setLoading(false)
+            return false
+        }
+    }
+
+    const setSearchTerm = async (searchTerm: string): Promise<void> => {
+        const normalized = searchTerm.trim()
+        if (normalized === state.searchTerm) {
+            return
         }
 
-        updateProductState(product)
-    }
-
-    const setSearchTerm = async (searchTerm: string): Promise<any> => {
         clearPages()
-        state.searchTerm = searchTerm
-        setCurrentPage(1)
-        await getPage(1)
+        state.searchTerm = normalized
+        state.currentPage = 1
+        await fetchPage(1)
     }
 
-    const getProduct = async (id: number): Promise<ProductModel> => {
-        loaderStore.setLoading(true)
+    const getProduct = async (id: number): Promise<ProductModel | null> => {
+        try {
+            const response = await loaderStore.withLoading(() => Axios.get(`${ApiConstant.PRODUCTS_URL}/${id}`))
 
-        const response = await Axios.get(`${ApiConstant.PRODUCTS_URL}/${id}`)
-            .then((response: AxiosResponse): AxiosResponse => {
-                loaderStore.setLoading(false)
+            return ProductModel.fromApi(response.data)
+        } catch (error) {
+            alertStore.addError(error)
 
-                return response
-            })
-
-        return new ProductModel(
-            response.data.id,
-            response.data.title,
-            response.data.description,
-            response.data.price,
-            response.data.rating,
-            response.data.ratingCount,
-            response.data.image
-        )
+            return null
+        }
     }
 
     return {
+        currentPageProducts,
         getState,
         getData,
         getCurrentPage,

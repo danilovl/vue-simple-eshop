@@ -3,40 +3,45 @@ import {defineStore} from 'pinia'
 import type {ProductModel} from '@/model/product-model'
 import type {FavoriteState} from '@/store/type/favorite'
 
-export const useFavoriteStore = defineStore('favorite', ()  => {
+const LOCAL_STORAGE_NAME = 'favorite'
+
+export const useFavoriteStore = defineStore('favorite', () => {
     const state = reactive<FavoriteState>({
         favorites: []
-    }) as FavoriteState
-
-    const itemCount = computed((): number | string => {
-        const length = state.favorites.length
-
-        return length > 0 ? length : '0'
     })
 
-    const getFavorites = computed((): ProductModel[] => {
-        return state.favorites
-    })
+    let initialized = false
+
+    const itemCount = computed((): number => state.favorites.length)
+
+    const getFavorites = computed((): ProductModel[] => state.favorites)
 
     const isProductIsFavorite = (product: ProductModel): boolean => {
-        const favoriteProduct = state.favorites.find((line: any): boolean => line.id === product.id)
-
-        return favoriteProduct !== undefined
+        return state.favorites.some((line: ProductModel): boolean => line.id === product.id)
     }
 
-    function setFavoriteData(data: any): void {
+    function setFavoriteData(data: ProductModel[]): void {
         state.favorites = data
     }
 
     function loadFavoriteData(): void {
-        const data = localStorage.getItem('favorite')
-        if (data) {
-            setFavoriteData(JSON.parse(data))
+        const data = localStorage.getItem(LOCAL_STORAGE_NAME)
+        if (!data) {
+            return
+        }
+
+        try {
+            const parsed: unknown = JSON.parse(data)
+            if (Array.isArray(parsed)) {
+                setFavoriteData(parsed.filter((item: any): boolean => item?.id != null))
+            }
+        } catch {
+            localStorage.removeItem(LOCAL_STORAGE_NAME)
         }
     }
 
     function storeFavoriteData(): void {
-        localStorage.setItem('favorite', JSON.stringify(state.favorites))
+        localStorage.setItem(LOCAL_STORAGE_NAME, JSON.stringify(state.favorites))
     }
 
     const clearFavoriteData = (): void => {
@@ -44,6 +49,11 @@ export const useFavoriteStore = defineStore('favorite', ()  => {
     }
 
     const initializeFavorite = (): void => {
+        if (initialized) {
+            return
+        }
+        initialized = true
+
         loadFavoriteData()
 
         watch(
@@ -54,25 +64,20 @@ export const useFavoriteStore = defineStore('favorite', ()  => {
     }
 
     const addProduct = (product: ProductModel): void => {
-        const line = state.favorites.find((line: any): boolean => line.id === product.id)
-
-        if (line === undefined) {
+        if (!isProductIsFavorite(product)) {
             state.favorites.push(product)
         }
     }
-    const removeProduct = (product: ProductModel): void => {
-        const filterFavorites = state.favorites.filter((line: any): boolean => line.id !== product.id)
 
-        setFavoriteData(filterFavorites)
+    const removeProduct = (product: ProductModel): void => {
+        setFavoriteData(state.favorites.filter((line: ProductModel): boolean => line.id !== product.id))
     }
 
     const addOrRemoveProduct = (product: ProductModel): void => {
-        const line = state.favorites.find((line: any): boolean => line.id === product.id)
-
-        if (line === undefined) {
-            addProduct(product)
-        } else {
+        if (isProductIsFavorite(product)) {
             removeProduct(product)
+        } else {
+            addProduct(product)
         }
     }
 

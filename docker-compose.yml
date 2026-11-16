@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   node:
     build:
@@ -8,6 +6,7 @@ services:
     volumes:
       - './:/var/www/html/app'
     working_dir: /var/www/html/app
+    command: sh -c "npm install && npx run-p dev json"
     ports:
       - '5174:5174'
       - '3500:3500'

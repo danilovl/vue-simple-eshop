@@ -8,6 +8,6 @@ export class OrderModel {
         public address: string,
         public basket: BasketModel[],
         public processed: boolean = false,
-        public readonly id?: number | null
+        public readonly id?: number
     ) {}
 }
